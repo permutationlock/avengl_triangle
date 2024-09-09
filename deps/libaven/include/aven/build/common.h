@@ -443,12 +443,18 @@ AvenArg aven_build_common_args_data[] = {
 #if defined(AVEN_BUILD_COMMON_DEFAULT_LDWINFLAG)
             .data = { .arg_str = AVEN_BUILD_COMMON_DEFAULT_LDWINFLAG },
 #elif defined(_WIN32)
-    #if defined(__clang__)
-            .data = { .arg_str = "-Wl,--subsystem,windows" },
-    #elif defined(_MSC_VER)
+    #if defined(_MSC_VER)
+        #if defined(__clang__)
+            .data = { .arg_str = "-Wl/SUBSYSTEM:WINDOWS" },
+        #else 
             .data = { .arg_str = "/SUBSYSTEM:WINDOWS" },
+        #endif
     #elif defined(__GNUC__)
+        #if defined(__clang__)
+            .data = { .arg_str = "-Wl,--subsystem,windows" },
+        #else
             .data = { .arg_str = "-mwindows" },
+        #endif
     #else
             .data = { .arg_str = "" },
     #endif

@@ -69,24 +69,6 @@ int main(int argc, char **argv) {
         }
     }
 
-#if defined(_WIN32) and \
-    !defined(_MSC_VER) and \
-    defined(__GNUC__) and \
-    !defined(__clang__)
-    {
-        AvenStr ldflag_data[] {
-            aven_str_cstr(aven_arg_get_str(args, "-ldflags")),
-            aven_str("-mwindows"),
-        };
-        AvenStrSlice ldflags = {
-            .ptr = ldflag_data,
-            .len = countof(ldflag_daga),
-        };
-        AvenStr newldflags = aven_str_join(ldflags, ' ', &arena);
-        aven_arg_set_str(args, "-ldflags", newldflags.ptr);
-    }
-#endif
-
     int error = aven_arg_parse(
         args,
         argv,
