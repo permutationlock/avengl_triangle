@@ -233,6 +233,7 @@ static inline AvenBuildStep avengl_triangle_build_step_hot_exe(
         objs,
         out_dir_step,
         aven_str("avengl_triangle"),
+        true,
         arena
     );
 }
@@ -313,6 +314,7 @@ static inline AvenBuildStep avengl_triangle_build_step_exe(
         objs,
         out_dir_step,
         aven_str("avengl_triangle"),
+        true,
         arena
     );
 }

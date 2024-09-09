@@ -26,7 +26,7 @@ typedef struct {
     AvenArgValue value;
 } AvenArg;
 
-typedef Optional(AvenArg *) AvenArgPtrOptional;
+typedef Optional(AvenArg) AvenArgOptional;
 typedef Slice(AvenArg) AvenArgSlice;
 
 typedef enum {
@@ -45,7 +45,7 @@ AVEN_FN int aven_arg_parse(
     char *usage
 );
 
-AVEN_FN AvenArgPtrOptional aven_arg_get(AvenArgSlice arg_slice, char *argname);
+AVEN_FN AvenArgOptional aven_arg_get(AvenArgSlice arg_slice, char *argname);
 AVEN_FN bool aven_arg_has_arg(AvenArgSlice arg_slice, char *argname);
 AVEN_FN bool aven_arg_get_bool(AvenArgSlice arg_slice, char *argname);
 AVEN_FN int aven_arg_get_int(AvenArgSlice arg_slice, char *argname);
@@ -200,82 +200,49 @@ AVEN_FN int aven_arg_parse(
     return error;
 }
 
-AVEN_FN AvenArgPtrOptional aven_arg_get(
+AVEN_FN AvenArgOptional aven_arg_get(
     AvenArgSlice arg_slice,
     char *argname
 ) {
     for (size_t i = 0; i < arg_slice.len; i += 1) {
         if (strcmp(argname, slice_get(arg_slice, i).name) == 0) {
-            return (AvenArgPtrOptional){
+            return (AvenArgOptional){
                 .valid = true,
-                .value = &slice_get(arg_slice, i),
+                .value = slice_get(arg_slice, i),
             };
         }
     }
     
-    return (AvenArgPtrOptional){ .valid = false };
+    return (AvenArgOptional){ .valid = false };
 }
 
 AVEN_FN bool aven_arg_has_arg(AvenArgSlice arg_slice, char *argname) {
-    AvenArgPtrOptional opt_arg = aven_arg_get(arg_slice, argname);
-    return opt_arg.valid and (opt_arg.value->type == opt_arg.value->value.type);
+    AvenArgOptional opt_arg = aven_arg_get(arg_slice, argname);
+    return opt_arg.valid and (opt_arg.value.type == opt_arg.value.value.type);
 }
 
 AVEN_FN bool aven_arg_get_bool(AvenArgSlice arg_slice, char *argname) {
-    AvenArgPtrOptional opt_arg = aven_arg_get(arg_slice, argname);
+    AvenArgOptional opt_arg = aven_arg_get(arg_slice, argname);
     assert(opt_arg.valid);
-    assert(opt_arg.value->type == opt_arg.value->value.type);
-    assert(opt_arg.value->type == AVEN_ARG_TYPE_BOOL);
-    return opt_arg.value->value.data.arg_bool;
+    assert(opt_arg.value.type == opt_arg.value.value.type);
+    assert(opt_arg.value.type == AVEN_ARG_TYPE_BOOL);
+    return opt_arg.value.value.data.arg_bool;
 }
 
 AVEN_FN int aven_arg_get_int(AvenArgSlice arg_slice, char *argname) {
-    AvenArgPtrOptional opt_arg = aven_arg_get(arg_slice, argname);
+    AvenArgOptional opt_arg = aven_arg_get(arg_slice, argname);
     assert(opt_arg.valid);
-    assert(opt_arg.value->type == opt_arg.value->value.type);
-    assert(opt_arg.value->type == AVEN_ARG_TYPE_INT);
-    return opt_arg.value->value.data.arg_int;
+    assert(opt_arg.value.type == opt_arg.value.value.type);
+    assert(opt_arg.value.type == AVEN_ARG_TYPE_INT);
+    return opt_arg.value.value.data.arg_int;
 }
 
 AVEN_FN char *aven_arg_get_str(AvenArgSlice arg_slice, char *argname) {
-    AvenArgPtrOptional opt_arg = aven_arg_get(arg_slice, argname);
+    AvenArgOptional opt_arg = aven_arg_get(arg_slice, argname);
     assert(opt_arg.valid);
-    assert(opt_arg.value->type == opt_arg.value->value.type);
-    assert(opt_arg.value->type == AVEN_ARG_TYPE_STRING);
-    return opt_arg.value->value.data.arg_str;
-}
-
-AVEN_FN void aven_arg_set_bool(
-    AvenArgSlice arg_slice,
-    char *argname,
-    bool new_value
-) {
-    AvenArgPtrOptional opt_arg = aven_arg_get(arg_slice, argname);
-    assert(opt_arg.valid);
-    assert(opt_arg.value->type == AVEN_ARG_TYPE_BOOL);
-    opt_arg.value->value.data.arg_bool = new_value;
-}
-
-AVEN_FN void aven_arg_set_int(
-    AvenArgSlice arg_slice,
-    char *argname,
-    int new_value
-) {
-    AvenArgPtrOptional opt_arg = aven_arg_get(arg_slice, argname);
-    assert(opt_arg.valid);
-    assert(opt_arg.value->type == AVEN_ARG_TYPE_INT);
-    opt_arg.value->value.data.arg_int = new_value;
-}
-
-AVEN_FN void aven_arg_set_str(
-    AvenArgSlice arg_slice,
-    char *argname,
-    char *new_value
-) {
-    AvenArgPtrOptional opt_arg = aven_arg_get(arg_slice, argname);
-    assert(opt_arg.valid);
-    assert(opt_arg.value->type == AVEN_ARG_TYPE_STRING);
-    opt_arg.value->value.data.arg_str = new_value;
+    assert(opt_arg.value.type == opt_arg.value.value.type);
+    assert(opt_arg.value.type == AVEN_ARG_TYPE_STRING);
+    return opt_arg.value.value.data.arg_str;
 }
 
 #endif // AVEN_IMPLEMENTATION
