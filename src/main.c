@@ -92,7 +92,11 @@ static void key_callback(
 
 #define ARENA_SIZE (4096 * 2000)
 
+#ifdef _MSC_VER
+int WinMain(void) {
+#else // _MSC_VER
 int main(void) {
+#endif // _MSC_VER
     aven_fs_utf8_mode();
 
     void *mem = malloc(ARENA_SIZE);

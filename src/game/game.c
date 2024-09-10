@@ -14,6 +14,9 @@
 
 #define ROTATION_VELOCITY (2.0f * AVEN_GLM_PI_F / 4.0f)
 
+#ifdef _MSC_VER
+__declspec(dllexport)
+#endif
 GameTable game_table = {
     .init = game_init,
     .reload = game_reload,

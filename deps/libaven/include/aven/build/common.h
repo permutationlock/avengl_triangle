@@ -443,12 +443,8 @@ AvenArg aven_build_common_args_data[] = {
 #if defined(AVEN_BUILD_COMMON_DEFAULT_LDWINFLAG)
             .data = { .arg_str = AVEN_BUILD_COMMON_DEFAULT_LDWINFLAG },
 #elif defined(_WIN32)
-    #if defined(_MSC_VER)
-        #if defined(__clang__)
-            .data = { .arg_str = "-Wl/SUBSYSTEM:WINDOWS" },
-        #else 
+    #if defined(_MSC_VER) and !defined(__clang__)
             .data = { .arg_str = "/SUBSYSTEM:WINDOWS" },
-        #endif
     #elif defined(__GNUC__)
         #if defined(__clang__)
             .data = { .arg_str = "-Wl,--subsystem,windows" },
@@ -1187,7 +1183,7 @@ static inline AvenBuildStep aven_build_common_step_windres(
         NULL
     );
 
-    AvenStrSlice cmd_slice = { .len = 4 };
+    AvenStrSlice cmd_slice = { .len = 4 + opts->windres.flags.len };
     cmd_slice.ptr = aven_arena_create_array(AvenStr, arena, cmd_slice.len);
 
     size_t i = 0;

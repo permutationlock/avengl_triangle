@@ -1,21 +1,19 @@
 #ifndef LIBAVEN_BUILD_H
 #define LIBAVEN_BUILD_H
 
-static inline AvenArg libaven_build_arg_windres_manifest(void) {
-    return (AvenArg){
-        .name = "-winutf8",
-        .description = "Link a Windows resource to enable UTF8 mode",
+static AvenArg libaven_build_arg_windres_manifest = {
+    .name = "-winutf8",
+    .description = "Link a Windows resource to enable UTF8 mode",
+    .type = AVEN_ARG_TYPE_INT,
+    .value = {
         .type = AVEN_ARG_TYPE_INT,
-        .value = {
-            .type = AVEN_ARG_TYPE_INT,
 #ifdef _WIN32
-            .data = { .arg_int = 1 },
+        .data = { .arg_int = 1 },
 #else
-            .data = { .arg_int = 0 },
+        .data = { .arg_int = 0 },
 #endif
-        },
-    };
-}
+    },
+};
 
 static inline bool libaven_build_opt_windres_manifest(AvenArgSlice args) {
     return aven_arg_get_int(args, "-winutf8") != 0;

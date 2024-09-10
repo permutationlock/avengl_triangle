@@ -95,11 +95,10 @@ int main(int argc, char **argv) {
     AvenStr work_dir = aven_str("build_work");
     AvenStr out_dir = aven_str("build_out");
 
-    AvenStr libaven_include_path = aven_path(
+    AvenStr libaven_path = aven_path(
         &arena,
         "deps",
         "libaven",
-        "include",
         NULL
     );
 
@@ -111,7 +110,7 @@ int main(int argc, char **argv) {
     AvenBuildStep triangle_step = avengl_triangle_build_step_exe(
         &opts,
         &triangle_opts,
-        libaven_include_path,
+        libaven_path,
         root_dir,
         &work_dir_step,
         &out_dir_step,
@@ -126,7 +125,7 @@ int main(int argc, char **argv) {
     AvenBuildStep hot_dll_step = avengl_triangle_build_step_hot_dll(
         &opts,
         &triangle_opts,
-        libaven_include_path,
+        libaven_path,
         root_dir,
         &work_dir_step,
         &out_dir_step,
@@ -146,7 +145,7 @@ int main(int argc, char **argv) {
     AvenBuildStep hot_exe_step = avengl_triangle_build_step_hot_exe(
         &opts,
         &triangle_opts,
-        libaven_include_path,
+        libaven_path,
         root_dir,
         &work_dir_step,
         &out_dir_step,
@@ -181,14 +180,15 @@ int main(int argc, char **argv) {
         for (;;) {
             switch (rebuild_state) {
                 case REBUILD_STATE_EXE:
+                    if (exe_pid.valid) {
+                        printf("kill %llu\n", (uint64_t)exe_pid.value);
+                        (void)aven_proc_kill(exe_pid.value);
+                        exe_pid.valid = false;
+                    }
                     aven_build_step_reset(&hot_exe_root_step);
                     error = aven_build_step_run(&hot_exe_root_step, arena);
                     if (error != 0) {
                         fprintf(stderr, "BUILD FAILED: %d\n", error);
-                    }  else if (exe_pid.valid) {
-                        printf("kill %d\n", exe_pid.value);
-                        (void)aven_proc_kill(exe_pid.value);
-                        exe_pid.valid = false;
                     }
                     break;
                 case REBUILD_STATE_GAME:
