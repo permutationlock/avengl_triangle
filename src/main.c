@@ -90,6 +90,30 @@ static void key_callback(
     }
 }
 
+GLFWwindow *window;
+AvenGL gl;
+GameCtx ctx;
+GameInfo game_info;
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+
+#ifdef HOT_RELOAD
+    #error "hot reloading dll incompatible with emcc"
+#endif
+
+void main_loop(void) {
+    int width;
+    int height;
+    glfwGetFramebufferSize(window, &width, &height);
+
+    game_info.vtable.update(&ctx, &gl, width, height);
+
+    glfwSwapBuffers(window);
+    glfwPollEvents();
+}
+#endif
+
 #define ARENA_SIZE (4096 * 2000)
 
 #ifdef _MSC_VER
@@ -115,7 +139,7 @@ int main(void) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
     glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
 
-    GLFWwindow *window = glfwCreateWindow(
+    window = glfwCreateWindow(
         (int)width,
         (int)height,
         "AvenGL Test",
@@ -161,7 +185,6 @@ int main(void) {
 #endif // _WIN32
         NULL
     );
-    GameInfo game_info;
     {
         GameInfoResult result = game_info_load(game_dll_path);
         if (result.error != 0) {
@@ -179,13 +202,18 @@ int main(void) {
     }
     bool game_valid = true;
 #else // HOT_RELOAD
-    GameInfo game_info = { .vtable = game_table };
+    game_info = (GameInfo){ .vtable = game_table };
     (void)arena;
 #endif // HOT_RELOAD
 
-    AvenGL gl = aven_gl_load(glfwGetProcAddress);
-    GameCtx ctx = game_info.vtable.init(&gl);
+    gl = aven_gl_load(glfwGetProcAddress);
+    ctx = game_info.vtable.init(&gl);
 
+#ifdef __EMSCRIPTEN__
+    emscripten_set_main_loop(main_loop, 0, 1);
+
+    return 0;
+#else // __EMSCRIPTEN__
     while (!glfwWindowShouldClose(window)) {
 #ifdef HOT_RELOAD
         AvenWatchResult result = aven_watch_check(game_watch_handle, 0);
@@ -223,6 +251,7 @@ int main(void) {
 
     glfwDestroyWindow(window);
     glfwTerminate();
+#endif // __EMSCRIPTEN__
 
     return 0;
 }
