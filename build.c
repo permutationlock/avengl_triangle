@@ -238,6 +238,7 @@ int main(int argc, char **argv) {
                 }
             }
 
+            // Ignore extraneous source modifications some editors produce
             while (result.payload != 0) {
                 result = aven_watch_check_multiple(handles, 100);
                 if (result.error != 0) {
