@@ -300,7 +300,7 @@ AvenArg aven_build_common_args_data[] = {
 #if defined(AVEN_BUILD_COMMON_DEFAULT_SOEXT)
             .data = { .arg_str = AVEN_BUILD_COMMON_DEFAULT_SOEXT },
 #elif defined(_WIN32)
-            .data = { .arg_str = ".dll .lib .pdb" },
+            .data = { .arg_str = ".dll .lib .pdb _aven_dl_loaded.dll" },
 #else
             .data = { .arg_str = ".so" },
 #endif

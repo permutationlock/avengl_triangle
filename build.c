@@ -16,6 +16,7 @@
 #include "deps/libaven/include/aven/watch.h"
 
 #include "deps/libaven/build.h"
+#include "deps/libavengl/build.h"
 #include "build.h"
 
 AvenArg custom_arg_data[] = {
@@ -181,8 +182,8 @@ int main(int argc, char **argv) {
             switch (rebuild_state) {
                 case REBUILD_STATE_EXE:
                     if (exe_pid.valid) {
-                        printf("kill %llu\n", (uint64_t)exe_pid.value);
-                        (void)aven_proc_kill(exe_pid.value);
+                        printf("killing game process\n");
+                        aven_proc_kill(exe_pid.value);
                         exe_pid.valid = false;
                     }
                     aven_build_step_reset(&hot_exe_root_step);

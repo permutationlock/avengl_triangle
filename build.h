@@ -1,8 +1,6 @@
 #ifndef AVENGL_TRIANGLE_BUILD_H
 #define AVENGL_TRIANGLE_BUILD_H
 
-#include "deps/libavengl/build.h"
-
 static inline AvenArgSlice avengl_triangle_build_args(AvenArena *arena) {
     AvenArg triangle_arg_data[] = {
         {
