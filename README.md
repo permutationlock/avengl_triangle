@@ -7,16 +7,18 @@ as an example of the simple [libaven][1] C build system.
 ## Dependencies
 
 There are no library or header build dependencies apart from a C compiler that
-supports the C99 or C11 for a hosted (not freestanding) POSIX or Windows target.
+supports the C99 or C11 and a hosted POSIX or Windows target.
 
-Generally dynamic linking/loading must be supported since GLFW will dynamically
-load
-the OS shared objects for OpenGL graphics and window managment. E.g. a static
-[musl][2] toolchain won't work (but dynamically linked musl libc works fine).
+In most cases dynamic linking/loading must be supported. The locally built
+and linked GLFW library will dynamically load the system shared objects for
+OpenGL graphics and window managment. Thus, e.g. a static linking only
+[musl][2] toolchain like `zig cc` with `-target
+x86_64-linux-musl` won't work.
 
-If you are targeting a special system with static libraries available for window
+If you are targeting a special system that does have static libraries
+for window
 management and OpenGL, e.g. the emulated POSIX environment of [Emscripten][3],
-options are avaliable to omit building and linking a local GLFW and to link any
+options are avaliable to omit locally building and linking GLFW and to link any
 desired system libraries.
 
 ## Building
@@ -34,6 +36,7 @@ compiler, but some flags and/or macros may require tweaking.
 
 ```
 gcc -Wall -Wextra -o build build.c
+./build
 ```
 
 The TinyCC compiler needs to either define `__BIGGEST_ALIGNMENT__` or use C11
@@ -132,8 +135,9 @@ artifacts.
 ./build clean
 ```
 
-[^1]: Only tested on Linux and Windows. The C compiler must support at least
-    the C99 or C11 standard.
+[^1]: Only tested on Linux and Windows. Getting a cross-compiler toolchain for
+    MacOS that supports the various graphical frameworks seems like a pain and
+    I haven't gotten around to it yet. No Apple support yet.
 
 [1]: https://github.com/permutationlock/libaven
 [2]: https://musl.libc.org/
