@@ -23,7 +23,7 @@ static inline AvenArgSlice avengl_triangle_build_args(AvenArena *arena) {
 #if defined(BUILD_DEFAULT_SYSLIBS)
                 .data = { .arg_str = BUILD_DEFAULT_SYSLIBS },
 #elif defined(_WIN32)
-        #if defined(_MSC_VER)
+        #if defined(_MSC_VER) and !defined(__clang__)
                 .data = {
                     .arg_str = "kernel32.lib user32.lib gdi32.lib shell32.lib"
                 },
@@ -231,11 +231,20 @@ static inline AvenBuildStep avengl_triangle_build_step_hot_exe(
     }
 
     if (triangle_opts->winutf8) {
+        AvenBuildStep *libaven_dir_step = aven_arena_create(
+            AvenBuildStep,
+            arena
+        );
+        *libaven_dir_step = aven_build_common_step_subdir(
+            work_dir_step,
+            aven_str("libaven"),
+            arena
+        );
         AvenBuildStep *windres_step = aven_arena_create(AvenBuildStep, arena);
         *windres_step = libaven_build_step_windres_manifest(
             opts,
             libaven_path,
-            work_dir_step,
+            libaven_dir_step,
             arena
         );
         objs.len += 1;
@@ -324,11 +333,20 @@ static inline AvenBuildStep avengl_triangle_build_step_exe(
     }
 
     if (triangle_opts->winutf8) {
+        AvenBuildStep *libaven_dir_step = aven_arena_create(
+            AvenBuildStep,
+            arena
+        );
+        *libaven_dir_step = aven_build_common_step_subdir(
+            work_dir_step,
+            aven_str("libaven"),
+            arena
+        );
         AvenBuildStep *windres_step = aven_arena_create(AvenBuildStep, arena);
         *windres_step = libaven_build_step_windres_manifest(
             opts,
             libaven_path,
-            work_dir_step,
+            libaven_dir_step,
             arena
         );
         objs.len += 1;

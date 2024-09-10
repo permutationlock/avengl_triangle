@@ -267,7 +267,7 @@ AvenArg aven_build_common_args_data[] = {
             .data = { .arg_str = AVEN_BUILD_COMMON_DEFAULT_OBEXT },
 #elif defined(_WIN32)
     #if defined(_MSC_VER)
-            .data = { .arg_str = ".obj" },
+            .data = { .arg_str = ".obj .exp .pdb" },
     #else
             .data = { .arg_str = ".o" },
     #endif
@@ -285,7 +285,7 @@ AvenArg aven_build_common_args_data[] = {
 #if defined(AVEN_BUILD_COMMON_DEFAULT_EXEXT)
             .data = { .arg_str = AVEN_BUILD_COMMON_DEFAULT_EXEXT },
 #elif defined(_WIN32)
-            .data = { .arg_str = ".exe .pdb" },
+            .data = { .arg_str = ".exe .pdb .lib .exp" },
 #else
             .data = { .arg_str = "" },
 #endif
@@ -300,7 +300,7 @@ AvenArg aven_build_common_args_data[] = {
 #if defined(AVEN_BUILD_COMMON_DEFAULT_SOEXT)
             .data = { .arg_str = AVEN_BUILD_COMMON_DEFAULT_SOEXT },
 #elif defined(_WIN32)
-            .data = { .arg_str = ".dll .lib .pdb _aven_dl_loaded.dll" },
+            .data = { .arg_str = ".dll .lib .pdb .exp _aven_dl_loaded.dll" },
 #else
             .data = { .arg_str = ".so" },
 #endif
@@ -316,7 +316,7 @@ AvenArg aven_build_common_args_data[] = {
             .data = { .arg_str = AVEN_BUILD_COMMON_DEFAULT_AREXT },
 #elif defined(_WIN32)
     #if defined(_MSC_VER)
-            .data = { .arg_str = ".lib" },
+            .data = { .arg_str = ".lib .exp .pdb" },
     #else
             .data = { .arg_str = ".a" },
     #endif
@@ -914,23 +914,7 @@ static AvenBuildStep aven_build_common_step_ld(
         default:
             break;
     }
-
-    for (size_t j = 0; j < linked_libs.len; j += 1) {
-        if (opts->ld.flagsep > 0) {
-            slice_get(cmd_slice, i) = opts->ld.libflag;
-            i += 1;
-            slice_get(cmd_slice, i) = slice_get(linked_libs, j);
-            i += 1;
-        } else {
-            slice_get(cmd_slice, i) = aven_str_concat(
-                opts->ld.libflag,
-                slice_get(linked_libs, j),
-                arena
-            );
-            i += 1;
-        }
-    }
-
+ 
     if (opts->ld.flagsep > 0) {
         slice_get(cmd_slice, i) = opts->ld.outflag;
         i += 1;
@@ -950,6 +934,22 @@ static AvenBuildStep aven_build_common_step_ld(
         assert(obj_step->out_path.valid);
         slice_get(cmd_slice, i) = obj_step->out_path.value;
         i += 1;
+    }
+
+    for (size_t j = 0; j < linked_libs.len; j += 1) {
+        if (opts->ld.flagsep > 0) {
+            slice_get(cmd_slice, i) = opts->ld.libflag;
+            i += 1;
+            slice_get(cmd_slice, i) = slice_get(linked_libs, j);
+            i += 1;
+        } else {
+            slice_get(cmd_slice, i) = aven_str_concat(
+                opts->ld.libflag,
+                slice_get(linked_libs, j),
+                arena
+            );
+            i += 1;
+        }
     }
 
     AvenBuildOptionalPath out_path = { .value = target_path, .valid = true };
