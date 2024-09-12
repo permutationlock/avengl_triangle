@@ -7,7 +7,9 @@ static AvenArg libaven_build_arg_windres_manifest = {
     .type = AVEN_ARG_TYPE_INT,
     .value = {
         .type = AVEN_ARG_TYPE_INT,
-#ifdef _WIN32
+#if defined(LIBAVEN_BUILD_DEFUALT_WINUTF8)
+        .data = { .arg_int = LIBAVEN_BUILD_DEFUALT_WINUTF8 },
+#elif defined(_WIN32)
         .data = { .arg_int = 1 },
 #else
         .data = { .arg_int = 0 },

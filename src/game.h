@@ -8,6 +8,7 @@ typedef struct {
     GLuint vertex_buffer;
     GLuint vertex_shader;
     GLuint fragment_shader;
+    GLuint tex_id;
     GLuint program;
     GLuint mvp_location;
     GLuint vpos_location;

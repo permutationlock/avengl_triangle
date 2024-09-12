@@ -36,7 +36,7 @@
 #define Optional(t) struct { t value; bool valid; }
 #define Result(t) struct { t payload; int error; }
 #define Slice(t) struct { t *ptr; size_t len; }
-#define List(t, n) struct { size_t len; t array[n]; }
+#define List(t) struct { t *ptr; size_t len; size_t cap; }
 
 typedef Slice(unsigned char) ByteSlice;
 
@@ -53,6 +53,24 @@ typedef Slice(unsigned char) ByteSlice;
 
 #define slice_get(s, i) s.ptr[aven_assert_lt_internal(i, s.len)]
 #define list_get(l, i) l.array[aven_assert_lt_internal(i, l.len)]
+#define list_push(l) l.ptr[aven_assert_lt_internal(l.len++, l.cap)]
+
+#define slice_array(a) { .ptr = a, .len = countof(a) }
+#define slice_list(l) { .ptr = l.ptr, .len = l.len }
+#define slice_head(s, i) { \
+        .ptr = s.ptr, \
+        .len = aven_assert_lt_internal(i, s.len) \
+    }
+#define slice_tail(s, i) { \
+        .ptr = s.ptr + i, \
+        .len = s.len - aven_assert_lt_internal(i, s.len) \
+    }
+#define slice_range(s, i, j) { \
+        .ptr = s.ptr + i, \
+        .len = aven_assert_lt_internal(j, s.len) - \
+            aven_assert_lt_internal(i, j) \
+    }
+#define list_array(a) { .ptr = a, .cap = countof(a) }
 
 #define as_bytes(ptr) (ByteSlice){ \
         .ptr = (unsigned char *)ptr, \
@@ -65,6 +83,10 @@ typedef Slice(unsigned char) ByteSlice;
 #define slice_as_bytes(s) (ByteSlice){ \
         .ptr = (unsigned char *)s.ptr, \
         .len = s.len * sizeof(*s.ptr), \
+    }
+#define list_as_bytes(l) (ByteSlice) { \
+        .ptr = (unsigned char *)l.ptr, \
+        .len = l.len * sizeof(*l.ptr), \
     }
 
 #if defined(_WIN32) and defined(_MSC_VER)

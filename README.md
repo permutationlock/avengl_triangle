@@ -1,13 +1,13 @@
 # Aven GL Triangle
 
 The repo contains a self-contained OpenGL ES2 triangle that can be built on most
-systems with any C compiler[^1]. It primarily serves
-as an example of the simple [libaven][1] C build system.
+systems with most C compilers[^1]. It primarily serves
+as an example of the [libaven][1] C build system.
 
 ## Dependencies
 
 There are no library or header build dependencies apart from a C compiler that
-supports the C99 or C11 and a hosted POSIX or Windows target.
+supports at least the C99 or C11 standards for POSIX or Windows.
 
 In most cases dynamic linking/loading must be supported. The locally built
 and linked GLFW library will dynamically load the system shared objects for
@@ -15,16 +15,16 @@ OpenGL graphics and window managment. Thus, e.g. a static linking only
 [musl][2] toolchain like `zig cc` with `-target
 x86_64-linux-musl` won't work.
 
-If you are targeting a special system that does have static libraries
-for window
-management and OpenGL, e.g. the emulated POSIX environment of [Emscripten][3],
+If you are targeting a special system that has its own GLFW implementation,
+e.g. the emulated POSIX environment of [Emscripten][3],
 options are avaliable to omit locally building and linking GLFW and to link any
 desired system libraries.
 
 ## Building
 
-If you are on a Linux machine with `gcc` or `clang` as the system `CC`
-environment variable, then the build system can be built and run using:
+If you are on a Linux machine with the `CC` environment variable set to either
+`gcc` or `clang`, then the build system can be compiled using
+the provided tiny two command `Makefile`.
 
 ```
 make
@@ -32,7 +32,8 @@ make
 ```
 
 The build executable can also be built directly using practically any C
-compiler, but some flags and/or macros may require tweaking.
+compiler, but some flags and/or macros will require tweaking for compilers
+other than `gcc` or `clang`.
 
 ```
 gcc -Wall -Wextra -o build build.c
@@ -58,26 +59,29 @@ cproc -D AVEN_BUILD_COMMON_DEFAULT_CC=\"cproc\" -o build build.c
 
 On a Windows machine there are several one line `.bat` files provided as
 examples, but just as on Linux you should be able to simply compile the
-`build.c` file with e.g. `cl.exe`, `clang.exe`, or `gcc.exe`.
+`build.c` file with e.g. `cl.exe`.
 
 ```
 cl.exe /std:c11 /W3 /Fe:build.exe build.c
 .\build.exe
 ```
 
+MinGW and `clang` (MSVC and GNU) should also work out-of-the-box on Windows.
+
 ```
 gcc.exe -Wall -Wextra -o build.exe build.c
 .\build.exe
 ```
 
-A more involved case is building the project using only the `zig` binary.
-Arguments must be provided to indicate which tool to run, e.g. `zig cc` or
-`zig rc`. See `zig_make.bat` for an example command that should work on Windows
-or Linux.
+A more involved example would be using the `zig` toolchain. The Zig C compiler
+is simply a wrapper around `clang` and thus is not automatically identifiable
+via the preprocessor. Therefore arguments must be provided to indicate how
+the Zig tools should run, e.g. `zig cc` for C compilation and linking and
+`zig rc` for Windows resource compilation. See `zig_make.bat` for an example
+command that should work on both Windows and Linux.
 
 ## Source watching and hot reloading
 
-The real power of a C build executable shows its face with the `watch` command.
 If you have built the build system via any of the above methods, add a `watch`
 argument to run the `build` executable in hot reload mode.
 
@@ -85,8 +89,9 @@ argument to run the `build` executable in hot reload mode.
 ./build watch
 ```
 
-The project will build adn run and watch for changes to source files.
-If a file in the root of `src/` is modified, then the game will close,
+The project will build and run while the build system watches for changes to
+the files source files.
+If a file in the root of `src/` is modified, then the application will close,
 rebuild, and run. However, if changes are made to files in
 `src/game/`, they will hot reload into the running executable.
 
@@ -97,13 +102,21 @@ that is used to compile the build system. As seen above, these defaults can be
 manually overridden by defining macros, or the corresponding flags can be set at
 runtime.
 
-Here is a runtime example building a Windows executable from Linux using
-MinGW-w64.
+To see a full list of available command line options you can run the build
+executable witht the `help` argument.
 
 ```
+./build help
+```
+
+Here is an example using command line arguments to build a Windows executable
+on a Linux mchine using MinGW-w64.
+
+```
+gcc -o build build.c
 ./build -cc "x86_64-w64-mingw32-gcc" -ar "x86_64-w64-mingw32-ar" \
     -windres "x86_64-w64-mingw32-windres" -ccflags "-Wall -Wextra" \
-    -glfw-ccflags "" -exext ".exe" -soext ".dll" -wrext ".o" \
+    -glfw-ccflags "" -winutf8 1 -exext ".exe" -soext ".dll" -wrext ".o" \
     -syslibs "kernel32 user32 shell32 gdi32" -ldwinflag "-mwindows"
 ```
 
@@ -135,10 +148,17 @@ artifacts.
 ./build clean
 ```
 
-[^1]: Only tested on Linux and Windows. Getting a cross-compiler toolchain for
+Note that if you passed special command line arguments to the build command, you
+will need to pass those same arguments to the clean command. The clean command
+only attempts to remove files and directories that it is able to create.
+
+[^1]: No Apple support, and I have only tested on `x86_64` Linux and Windows.
+    Setting up a cross-compilation toolchain for
     MacOS that supports the various graphical frameworks seems like a pain and
-    I haven't gotten around to it yet. No Apple support yet.
+    I have no Apple device to test with. The way that GLFW implements Mac
+    windowing support also looks suspect to me.
 
 [1]: https://github.com/permutationlock/libaven
 [2]: https://musl.libc.org/
 [3]: https://emscripten.org/
+

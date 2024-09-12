@@ -126,7 +126,8 @@ static inline AvenBuildStep avengl_triangle_build_step_hot_dll(
         .ptr = include_data,
         .len = countof(include_data)
     };
-    AvenStrSlice macros = { 0 };
+    AvenStr macro_data[] = { aven_str("HOT_RELOAD") };
+    AvenStrSlice macros = { .ptr = macro_data, .len = countof(macro_data) };
 
     AvenBuildStep *game_step = aven_arena_create(AvenBuildStep, arena);
     *game_step = aven_build_common_step_cc_ex(

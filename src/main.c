@@ -15,7 +15,7 @@
 
 #include "game.h"
 
-#ifdef HOT_RELOAD
+#if defined(HOT_RELOAD)
     #include <aven/dl.h>
     #include <aven/watch.h>
 
@@ -30,6 +30,8 @@
         GAME_INFO_LOAD_ERROR_OPEN,
         GAME_INFO_LOAD_ERROR_SYM,
     } GameInfoError;
+
+    GameInfo game_info;
 
     static GameInfoResult game_info_load(AvenStr path) {
         GameInfo game_dll = { 0 };
@@ -62,14 +64,15 @@
                 break;
         }
     }
-#else
+#else // !defined(HOT_RELOAD)
     #include "game/game.c"
 
     typedef struct {
         GameTable vtable;
     } GameInfo;
-    extern GameTable game_table;
-#endif
+    
+    static const GameInfo game_info = { .vtable = game_table };
+#endif // !defined(HOT_RELOAD)
 
 static void error_callback(int error, const char* description) {
     (void)error;
@@ -93,9 +96,8 @@ static void key_callback(
 GLFWwindow *window;
 AvenGL gl;
 GameCtx ctx;
-GameInfo game_info;
 
-#ifdef __EMSCRIPTEN__
+#if defined(__EMSCRIPTEN__)
 #include <emscripten.h>
 
 #ifdef HOT_RELOAD
@@ -112,15 +114,15 @@ void main_loop(void) {
     glfwSwapBuffers(window);
     glfwPollEvents();
 }
-#endif
+#endif // defined(__EMSCRIPTEN__)
 
 #define ARENA_SIZE (4096 * 2000)
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
 int WinMain(void) {
-#else // _MSC_VER
+#else // !defined(_MSC_VER)
 int main(void) {
-#endif // _MSC_VER
+#endif // !defined(_MSC_VER)
     aven_fs_utf8_mode();
 
     void *mem = malloc(ARENA_SIZE);
@@ -138,6 +140,7 @@ int main(void) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
     glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
+    // glfwWindowHint(GLFW_SAMPLES, 4);
 
     window = glfwCreateWindow(
         (int)width,
@@ -165,12 +168,12 @@ int main(void) {
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
 
-#ifdef HOT_RELOAD
+#if defined(HOT_RELOAD)
     AvenStr exe_path = aven_str(".");
     {
-        AvenPathResult result = aven_path_exe(&arena);
-        if (result.error == 0) {
-            exe_path = result.payload;
+        AvenPathResult info_result = aven_path_exe(&arena);
+        if (info_result.error == 0) {
+            exe_path = info_result.payload;
         }
     }
     AvenStr exe_dir_path = aven_path_rel_dir(exe_path, &arena);
@@ -178,11 +181,11 @@ int main(void) {
         &arena,
         exe_dir_path.ptr,
         "game",
-#ifdef _WIN32
+#if defined(_WIN32)
         "game.dll",
-#else
+#else // !defined(_WIN32)
         "game.so",
-#endif // _WIN32
+#endif // !defined(_WIN32)
         NULL
     );
     {
@@ -201,38 +204,36 @@ int main(void) {
         return 1;
     }
     bool game_valid = true;
-#else // HOT_RELOAD
-    game_info = (GameInfo){ .vtable = game_table };
+#else // !defined(HOT_RELOAD)
     (void)arena;
-#endif // HOT_RELOAD
+#endif // !defined(HOT_RELOAD)
 
     gl = aven_gl_load(glfwGetProcAddress);
     ctx = game_info.vtable.init(&gl);
 
-#ifdef __EMSCRIPTEN__
+#if defined(__EMSCRIPTEN__)
     emscripten_set_main_loop(main_loop, 0, 1);
-
     return 0;
-#else // __EMSCRIPTEN__
+#else // !defined(__EMSCRIPTEN__)
     while (!glfwWindowShouldClose(window)) {
-#ifdef HOT_RELOAD
-        AvenWatchResult result = aven_watch_check(game_watch_handle, 0);
-        if (result.error != 0) {
+#if defined(HOT_RELOAD)
+        AvenWatchResult watch_result = aven_watch_check(game_watch_handle, 0);
+        if (watch_result.error != 0) {
             fprintf(stderr, "FAILED TO WATCH: %s\n", watch_dir_path.ptr);
             return 1;
         }
-        if (result.payload != 0) {
+        if (watch_result.payload != 0) {
             if (game_info.handle != NULL) {
                 aven_dl_close(game_info.handle);
                 game_info.handle = NULL;
             }
-            GameInfoResult result = game_info_load(game_dll_path);
-            if (result.error != 0) {
-                game_info_error_print(result.error);
+            GameInfoResult info_result = game_info_load(game_dll_path);
+            if (info_result.error != 0) {
+                game_info_error_print(info_result.error);
                 game_valid = false;
             } else {
                 printf("reloading\n");
-                game_info = result.payload;
+                game_info = info_result.payload;
                 game_info.vtable.reload(&ctx, &gl);
                 game_valid = true;
             }
@@ -240,7 +241,7 @@ int main(void) {
         if (!game_valid) {
             continue;
         }
-#endif // HOT_RELOAD
+#endif // defined(HOT_RELOAD)
         glfwGetFramebufferSize(window, &width, &height);
 
         game_info.vtable.update(&ctx, &gl, width, height);
@@ -251,7 +252,7 @@ int main(void) {
 
     glfwDestroyWindow(window);
     glfwTerminate();
-#endif // __EMSCRIPTEN__
+#endif // !defined(__EMSCRIPTEN__)
 
     return 0;
 }
