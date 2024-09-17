@@ -138,9 +138,9 @@ static inline AvenGLTextFont aven_gl_text_font_init(
         GL_UNSIGNED_BYTE,
         texture_bytes.ptr
     );
-    gl->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    gl->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     assert(gl->GetError() == 0);
-    gl->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    gl->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     assert(gl->GetError() == 0);
     gl->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     assert(gl->GetError() == 0);
@@ -168,6 +168,7 @@ typedef struct {
     List(AvenGLTextVertex) vertices;
     List(GLushort) indices;
     GLuint vertex_buffer;
+    GLuint index_buffer;
     GLuint vertex_shader;
     GLuint fragment_shader;
     GLuint program;
@@ -202,14 +203,26 @@ static inline AvenGLTextGeometry aven_gl_text_geometry_init(
     assert(gl->GetError() == 0);
     gl->GenBuffers(1, &geometry.vertex_buffer);
     assert(gl->GetError() == 0);
+    gl->GenBuffers(1, &geometry.index_buffer);
+    assert(gl->GetError() == 0);
 
     gl->BindBuffer(GL_ARRAY_BUFFER, geometry.vertex_buffer);
     assert(gl->GetError() == 0);
 
     gl->BufferData(
         GL_ARRAY_BUFFER,
-        (GLsizeiptr)(geometry.vertices.cap * sizeof(AvenGLTextVertex)),
+        (GLsizeiptr)(geometry.vertices.cap * sizeof(*geometry.vertices.ptr)),
         geometry.vertices.ptr,
+        GL_DYNAMIC_DRAW
+    );
+    assert(gl->GetError() == 0);
+
+    gl->BindBuffer(GL_ELEMENT_ARRAY_BUFFER, geometry.index_buffer);
+    assert(gl->GetError() == 0);
+    gl->BufferData(
+        GL_ELEMENT_ARRAY_BUFFER,
+        (GLsizeiptr)(geometry.indices.cap * sizeof(*geometry.indices.ptr)),
+        geometry.indices.ptr,
         GL_DYNAMIC_DRAW
     );
     assert(gl->GetError() == 0);
@@ -317,6 +330,11 @@ static inline AvenGLTextGeometry aven_gl_text_geometry_init(
         sizeof(AvenGLTextVertex),
         (void*)offsetof(AvenGLTextVertex, color)
     );
+
+    gl->BindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    assert(gl->GetError() == 0);
+    gl->BindBuffer(GL_ARRAY_BUFFER, 0);
+    assert(gl->GetError() == 0);
 
     return geometry;
 }
@@ -471,6 +489,16 @@ static inline void aven_gl_text_geometry_draw(
     );
     assert(gl->GetError() == 0);
 
+    gl->BindBuffer(GL_ELEMENT_ARRAY_BUFFER, geometry->index_buffer);
+    assert(gl->GetError() == 0);
+    gl->BufferSubData(
+        GL_ELEMENT_ARRAY_BUFFER,
+        0,
+        (GLsizeiptr)(sizeof(*geometry->indices.ptr) * geometry->indices.len),
+        geometry->indices.ptr
+    );
+    assert(gl->GetError() == 0);
+
     gl->UseProgram(geometry->program);
     assert(gl->GetError() == 0);
 
@@ -526,8 +554,11 @@ static inline void aven_gl_text_geometry_draw(
         GL_TRIANGLES,
         (GLsizei)geometry->indices.len,
         GL_UNSIGNED_SHORT,
-        geometry->indices.ptr
+        0
     );
+    assert(gl->GetError() == 0);
+
+    gl->BindTexture(GL_TEXTURE_2D, 0);
     assert(gl->GetError() == 0);
 
     gl->Disable(GL_BLEND);
@@ -537,6 +568,11 @@ static inline void aven_gl_text_geometry_draw(
     gl->DisableVertexAttribArray(geometry->vtex_location);
     assert(gl->GetError() == 0);
     gl->DisableVertexAttribArray(geometry->vpos_location);
+    assert(gl->GetError() == 0);
+
+    gl->BindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    assert(gl->GetError() == 0);
+    gl->BindBuffer(GL_ARRAY_BUFFER, 0);
     assert(gl->GetError() == 0);
 }
 

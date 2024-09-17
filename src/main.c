@@ -164,6 +164,10 @@ int main(void) {
         }
     }
 
+#ifdef __EMSCRIPTEN__
+    emscripten_set_main_loop(main_loop, 0, 0);
+#endif // __EMSCRIPTEN__
+
     glfwSetKeyCallback(window, key_callback);
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
@@ -212,10 +216,7 @@ int main(void) {
     gl = aven_gl_load(glfwGetProcAddress);
     ctx = game_info.vtable.init(&gl, &game_arena);
 
-#if defined(__EMSCRIPTEN__)
-    emscripten_set_main_loop(main_loop, 0, 1);
-    return 0;
-#else // !defined(__EMSCRIPTEN__)
+#if !defined(__EMSCRIPTEN__) // !defined(__EMSCRIPTEN__)
     while (!glfwWindowShouldClose(window)) {
 #if defined(HOT_RELOAD)
         AvenWatchResult watch_result = aven_watch_check(game_watch_handle, 0);
