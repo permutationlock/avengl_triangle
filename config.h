@@ -9,7 +9,7 @@
     #define LIBAVENGL_DEFAULT_GLFW_CCFLAGS \
         "-pedantic -fstrict-aliasing -O1 -g3 -Werror -Wall -Wextra " \
         "-Wstrict-prototypes -Wold-style-definition -Winit-self " \
-        "-Wno-unused-parameter -Wno-sign-compare " \
+        "-Wno-unused-parameter -Wno-sign-compare -Wno-overflow " \
         "-Wno-missing-field-initializers " \
         "-fsanitize-trap -fsanitize=unreachable -fsanitize=undefined"
     #define LIBAVENGL_DEFAULT_STB_CCFLAGS \
