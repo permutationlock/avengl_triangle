@@ -208,8 +208,9 @@ int main(void) {
     (void)arena;
 #endif // !defined(HOT_RELOAD)
 
+    AvenArena game_arena = arena;
     gl = aven_gl_load(glfwGetProcAddress);
-    ctx = game_info.vtable.init(&gl);
+    ctx = game_info.vtable.init(&gl, &game_arena);
 
 #if defined(__EMSCRIPTEN__)
     emscripten_set_main_loop(main_loop, 0, 1);
@@ -234,7 +235,8 @@ int main(void) {
             } else {
                 printf("reloading\n");
                 game_info = info_result.payload;
-                game_info.vtable.reload(&ctx, &gl);
+                game_arena = arena;
+                game_info.vtable.reload(&ctx, &gl, &game_arena);
                 game_valid = true;
             }
         }

@@ -182,7 +182,6 @@ int main(int argc, char **argv) {
             switch (rebuild_state) {
                 case REBUILD_STATE_EXE:
                     if (exe_pid.valid) {
-                        printf("killing game process\n");
                         aven_proc_kill(exe_pid.value);
                         exe_pid.valid = false;
                     }
@@ -204,7 +203,25 @@ int main(int argc, char **argv) {
             }
             rebuild_state = REBUILD_STATE_NONE;
 
+            if (exe_pid.valid) {
+                AvenProcWaitResult result = aven_proc_check(
+                    exe_pid.value
+                );
+                if (result.error == 0) {
+                    if (result.payload == 0) {
+                        printf("APPLICATION EXITED CLEANLY\n");
+                    } else {
+                        printf("APPLICATION FAILED: %d\n", result.payload);
+                    }
+                    exe_pid.valid = false;
+                } else if (result.error != AVEN_PROC_WAIT_ERROR_TIMEOUT) {
+                    aven_proc_kill(exe_pid.value);
+                    exe_pid.valid = false;
+                }
+            }
+
             if (!exe_pid.valid) {
+                printf("running\n");
                 AvenStr cmd_parts[] = { hot_exe_step.out_path.value };
                 AvenStrSlice cmd = { 
                     .ptr = cmd_parts,

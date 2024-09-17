@@ -117,6 +117,21 @@ static inline AvenBuildStep avengl_triangle_build_step_hot_dll(
         NULL
     );
 
+    AvenBuildStep *libavengl_dir_step = aven_arena_create(AvenBuildStep, arena);
+    *libavengl_dir_step = aven_build_common_step_subdir(
+        work_dir_step, aven_str("libavengl"), arena
+    );
+
+    AvenBuildStep *stb_step = aven_arena_create(AvenBuildStep, arena);
+    *stb_step = libavengl_build_step_stb(
+        opts,
+        &triangle_opts->libavengl,
+        libaven_build_include_path(libaven_path, arena),
+        libavengl_root_path,
+        libavengl_dir_step,
+        arena
+    );
+
     AvenStr include_data[] = {
         libaven_build_include_path(libaven_path, arena),
         libavengl_build_include_path(libavengl_root_path, arena),
@@ -139,7 +154,7 @@ static inline AvenBuildStep avengl_triangle_build_step_hot_dll(
         arena
     );
 
-    AvenBuildStep *obj_refs[] = { game_step };
+    AvenBuildStep *obj_refs[] = { game_step, stb_step };
     AvenBuildStepPtrSlice objs = {
         .ptr = obj_refs,
         .len = countof(obj_refs),
@@ -210,7 +225,7 @@ static inline AvenBuildStep avengl_triangle_build_step_hot_exe(
         arena
     );
 
-    AvenBuildStep *obj_refs[3] = {
+    AvenBuildStep *obj_refs[4] = {
         main_step,
     };
     AvenBuildStepPtrSlice objs = {
@@ -286,6 +301,16 @@ static inline AvenBuildStep avengl_triangle_build_step_exe(
         work_dir_step, aven_str("libavengl"), arena
     );
 
+    AvenBuildStep *stb_step = aven_arena_create(AvenBuildStep, arena);
+    *stb_step = libavengl_build_step_stb(
+        opts,
+        &triangle_opts->libavengl,
+        libaven_build_include_path(libaven_path, arena),
+        libavengl_root_path,
+        libavengl_dir_step,
+        arena
+    );
+
     AvenStr include_data[] = {
         libaven_build_include_path(libaven_path, arena),
         libavengl_build_include_path(libavengl_root_path, arena),
@@ -312,12 +337,13 @@ static inline AvenBuildStep avengl_triangle_build_step_exe(
         arena
     );
 
-    AvenBuildStep *obj_refs[3] = {
+    AvenBuildStep *obj_refs[4] = {
         main_step,
+        stb_step,
     };
     AvenBuildStepPtrSlice objs = {
         .ptr = obj_refs,
-        .len = 1,
+        .len = 2,
     };
 
     if (!triangle_opts->no_glfw) {

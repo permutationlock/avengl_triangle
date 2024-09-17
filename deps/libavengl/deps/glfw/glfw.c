@@ -5,7 +5,7 @@
     #endif
     #define _GLFW_WIN32
 #elif defined(__linux__)
-    #define _GLFW_WAYLAND
+    //#define _GLFW_WAYLAND
     #define _GLFW_X11
 #elif defined(__FreeBSD__) || \
     defined(__OpenBSD__) || \
@@ -51,9 +51,9 @@
     #include "src/egl_context.c"
     #include "src/osmesa_context.c"
 
-    #include "src/wl_init.c"
-    #include "src/wl_monitor.c"
-    #include "src/wl_window.c"
+    //#include "src/wl_init.c"
+    //#include "src/wl_monitor.c"
+    //#include "src/wl_window.c"
 
     #include "src/x11_init.c"
     #include "src/x11_monitor.c"

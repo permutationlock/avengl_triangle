@@ -15,6 +15,19 @@ AvenArg libavengl_build_arg_data[] = {
         .optional = true,
 #endif
     },
+    {
+        .name = "-stb-ccflags",
+        .description = "C compiler flags for STB",
+        .type = AVEN_ARG_TYPE_STRING,
+#if defined(LIBAVENGL_DEFAULT_STB_CCFLAGS)
+        .value = {
+            .type = AVEN_ARG_TYPE_STRING,
+            .data = { .arg_str = LIBAVENGL_DEFAULT_STB_CCFLAGS },
+        },
+#else
+        .optional = true,
+#endif
+    },
 };
 AvenArgSlice libavengl_build_args = {
     .ptr = libavengl_build_arg_data,
@@ -27,7 +40,12 @@ typedef struct {
 } LibAvenGLBuildGLFWOpts;
 
 typedef struct {
+    Optional(AvenStrSlice) ccflags;
+} LibAvenGLBuildSTBOpts;
+
+typedef struct {
     LibAvenGLBuildGLFWOpts glfw;
+    LibAvenGLBuildSTBOpts stb;
 } LibAvenGLBuildOpts;
 
 static inline LibAvenGLBuildOpts libavengl_build_opts(
@@ -39,6 +57,14 @@ static inline LibAvenGLBuildOpts libavengl_build_opts(
         opts.glfw.ccflags.valid = true;
         opts.glfw.ccflags.value = aven_str_split(
             aven_str_cstr(aven_arg_get_str(args, "-glfw-ccflags")),
+            ' ',
+            arena
+        );
+    }
+    if (aven_arg_has_arg(args, "-stb-ccflags")) {
+        opts.stb.ccflags.valid = true;
+        opts.stb.ccflags.value = aven_str_split(
+            aven_str_cstr(aven_arg_get_str(args, "-stb-ccflags")),
             ' ',
             arena
         );
@@ -92,6 +118,35 @@ static inline AvenStr libavengl_build_include_xkbcommon(
         "xkbcommon",
         "include",
         NULL
+    );
+}
+
+static inline AvenBuildStep libavengl_build_step_stb(
+    AvenBuildCommonOpts *opts,
+    LibAvenGLBuildOpts *libavengl_opts,
+    AvenStr libaven_include_path,
+    AvenStr root_path,
+    AvenBuildStep *out_dir_step,
+    AvenArena *arena
+) {
+    AvenBuildCommonOpts stb_opts = *opts;
+    if (libavengl_opts->stb.ccflags.valid) {
+        stb_opts.cc.flags = libavengl_opts->stb.ccflags.value;
+    }
+    AvenStr include_paths[] = {
+        libaven_include_path
+    };
+    AvenStrSlice includes = {
+        .ptr = include_paths,
+        .len = countof(include_paths),
+    };
+    return aven_build_common_step_cc_ex(
+        &stb_opts,
+        includes,
+        (AvenStrSlice){ 0 },
+        aven_path(arena, root_path.ptr, "deps", "stb", "stb.c", NULL),
+        out_dir_step,
+        arena
     );
 }
 

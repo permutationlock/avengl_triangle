@@ -20,15 +20,19 @@ typedef enum {
 
 AVEN_FN AvenProcIdResult aven_proc_cmd(AvenStrSlice cmd, AvenArena arena);
 
+typedef Result(int) AvenProcWaitResult;
+
 typedef enum {
     AVEN_PROC_WAIT_ERROR_NONE = 0,
     AVEN_PROC_WAIT_ERROR_WAIT,
     AVEN_PROC_WAIT_ERROR_GETCODE,
     AVEN_PROC_WAIT_ERROR_PROCESS,
     AVEN_PROC_WAIT_ERROR_SIGNAL,
+    AVEN_PROC_WAIT_ERROR_TIMEOUT,
 } AvenProcWaitError;
 
-AVEN_FN int aven_proc_wait(AvenProcId pid);
+AVEN_FN AvenProcWaitResult aven_proc_check(AvenProcId pid);
+AVEN_FN AvenProcWaitResult aven_proc_wait(AvenProcId pid);
 
 typedef enum {
     AVEN_PROC_KILL_ERROR_NONE = 0,
@@ -177,7 +181,7 @@ AVEN_FN AvenProcIdResult aven_proc_cmd(
 #endif
 }
 
-AVEN_FN int aven_proc_wait(AvenProcId pid) {
+static AvenProcWaitResult aven_proc_status(AvenProcId pid, bool wait) {
 #ifdef _WIN32
     AVEN_WIN32_FN(uint32_t) WaitForSingleObject(
         void *handle,
@@ -188,44 +192,71 @@ AVEN_FN int aven_proc_wait(AvenProcId pid) {
         uint32_t *exit_code
     );
 
-    uint32_t result = WaitForSingleObject(pid, 0xffffffff); /* INFINITE */
-    if (result != 0) {
-        return AVEN_PROC_WAIT_ERROR_WAIT;
+    uint32_t result = WaitForSingleObject(
+        pid,
+        wait ? 0xffffffff /* INFINITE */ : 0x0
+    );
+    if (result == 0x00000102L /* TIMEOUT */) {
+        return (AvenProcWaitResult){ .error = AVEN_PROC_WAIT_ERROR_TIMEOUT };
+    } else if (result != 0) {
+        return (AvenProcWaitResult){ .error = AVEN_PROC_WAIT_ERROR_WAIT };
     }
 
-    uint32_t exit_code;
+    uint32_t exit_code = 0;
     int success = GetExitCodeProcess(pid, &exit_code);
     if (success == 0) {
-        return AVEN_PROC_WAIT_ERROR_GETCODE;
+        return (AvenProcWaitResult){ .error = AVEN_PROC_WAIT_ERROR_GETCODE };
     }
 
-    if (exit_code != 0) {
-        return AVEN_PROC_WAIT_ERROR_PROCESS;
-    }
+    return (AvenProcWaitResult){ .payload = (int)exit_code };
 #else
+    int exit_status = 0;
+    if (!wait) {
+        int wstatus = 0;
+        int res_pid = waitpid(pid, &wstatus, WNOHANG);
+        if (res_pid < 0) {
+            return (AvenProcWaitResult){ .error = AVEN_PROC_WAIT_ERROR_WAIT };
+        }
+        if (res_pid == 0) {
+            return (AvenProcWaitResult){
+                .error = AVEN_PROC_WAIT_ERROR_TIMEOUT
+            };
+        }
+        if (!WIFEXITED(wstatus)) {
+            exit_status = WEXITSTATUS(wstatus);
+        }
+    }
     for (;;) {
         int wstatus = 0;
         int res_pid = waitpid(pid, &wstatus, 0);
         if (res_pid < 0) {
-            return AVEN_PROC_WAIT_ERROR_WAIT;
+            if (errno == EINTR) {
+                continue;
+            }
+            return (AvenProcWaitResult){ .error = AVEN_PROC_WAIT_ERROR_WAIT };
         }
 
         if (WIFEXITED(wstatus)) {
-            int exit_status = WEXITSTATUS(wstatus);
-            if (exit_status != 0) {
-                return AVEN_PROC_WAIT_ERROR_PROCESS;
-            }
-
+            exit_status = WEXITSTATUS(wstatus);
             break;
         }
 
         if (WIFSIGNALED(wstatus)) {
-            return AVEN_PROC_WAIT_ERROR_SIGNAL;
+            return (AvenProcWaitResult){ .error = AVEN_PROC_WAIT_ERROR_SIGNAL };
         }
     }
-#endif
 
-    return 0;
+    return (AvenProcWaitResult){ .payload = exit_status };
+#endif
+}
+
+
+AVEN_FN AvenProcWaitResult aven_proc_check(AvenProcId pid) {
+    return aven_proc_status(pid, false);
+}
+
+AVEN_FN AvenProcWaitResult aven_proc_wait(AvenProcId pid) {
+    return aven_proc_status(pid, true);
 }
 
 AVEN_FN int aven_proc_kill(AvenProcId pid) {

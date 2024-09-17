@@ -72,13 +72,13 @@ typedef Slice(unsigned char) ByteSlice;
     }
 #define list_array(a) { .ptr = a, .cap = countof(a) }
 
-#define as_bytes(ptr) (ByteSlice){ \
-        .ptr = (unsigned char *)ptr, \
-        .len = sizeof(*ptr) \
+#define as_bytes(ref) (ByteSlice){ \
+        .ptr = (unsigned char *)ref, \
+        .len = sizeof(*ref) \
     }
-#define array_as_bytes(ptr) (ByteSlice){ \
-        .ptr = (unsigned char *)ptr, \
-        .len = sizeof(ptr)\
+#define array_as_bytes(arr) (ByteSlice){ \
+        .ptr = (unsigned char *)arr, \
+        .len = sizeof(arr)\
     }
 #define slice_as_bytes(s) (ByteSlice){ \
         .ptr = (unsigned char *)s.ptr, \
