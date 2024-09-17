@@ -71,7 +71,7 @@
         GameTable vtable;
     } GameInfo;
     
-    static const GameInfo game_info = { .vtable = game_table };
+    static GameInfo game_info;
 #endif // !defined(HOT_RELOAD)
 
 static void error_callback(int error, const char* description) {
@@ -209,7 +209,7 @@ int main(void) {
     }
     bool game_valid = true;
 #else // !defined(HOT_RELOAD)
-    (void)arena;
+    game_info.vtable = game_table;
 #endif // !defined(HOT_RELOAD)
 
     AvenArena game_arena = arena;
