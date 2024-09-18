@@ -6,16 +6,18 @@
     #define AVEN_IMPLEMENTATION
 #endif
 #include <aven.h>
+#include <aven/arena.h>
 #include <aven/gl.h>
 #include <aven/glm.h>
 #include <aven/gl/shape.h>
 #include <aven/gl/text.h>
+#include <aven/str.h>
 #include <aven/time.h>
 
 #include "../game.h"
 #include "font.h"
 
-#define ROTATION_VELOCITY (2.0f * AVEN_GLM_PI_F / 50.0f)
+#define ROTATION_VELOCITY (2.0f * AVEN_GLM_PI_F / 10.0f)
 #define MAX_VERTICES 256
 #define MAX_INDICES 512
 
@@ -31,29 +33,42 @@ const GameTable game_table = {
     .deinit = game_deinit,
 };
 
-static void game_load(GameCtx *ctx, AvenGL *gl, AvenArena *arena) {
-    ctx->text_geometry = aven_gl_text_geometry_init(gl, ctx->font, 128, arena);
+static void game_load(GameCtx *ctx, AvenGL *gl) {
+    ctx->arena = ctx->init_arena;
+    ctx->text_geometry = aven_gl_text_geometry_init(
+        gl,
+        ctx->font,
+        128,
+        &ctx->arena
+    );
     ctx->shape_color_geometry = aven_gl_shape_color_geometry_init(
         gl,
         128,
         192,
-        arena
+        &ctx->arena
     );
 }
 
 static void game_unload(GameCtx *ctx, AvenGL *gl) {
     aven_gl_shape_color_geometry_deinit(&ctx->shape_color_geometry, gl);
     aven_gl_text_geometry_deinit(&ctx->text_geometry, gl);
+
+    ctx->shape_color_geometry = (AvenGLShapeColorGeometry){ 0 };
+    ctx->text_geometry = (AvenGLTextGeometry){ 0 };
 }
 
 GameCtx game_init(AvenGL *gl, AvenArena *arena) {
     GameCtx ctx = { 0 };
 
-    AvenArena temp_arena = *arena;
-    ByteSlice font_bytes = array_as_bytes(game_font_opensans_ttf);
+    ctx.init_arena = aven_arena_init(
+        aven_arena_alloc(arena, GAME_ARENA_SIZE, __BIGGEST_ALIGNMENT__),
+        GAME_ARENA_SIZE
+    );
 
-    ctx.font = aven_gl_text_font_init(gl, font_bytes, 64.0f, temp_arena);
-    game_load(&ctx, gl, arena);
+    ByteSlice font_bytes = array_as_bytes(game_font_opensans_ttf);
+    ctx.font = aven_gl_text_font_init(gl, font_bytes, 64.0f, ctx.init_arena);
+
+    game_load(&ctx, gl);
 
     ctx.last_update = aven_time_now();
     ctx.angle = 0.0f;
@@ -67,9 +82,9 @@ void game_deinit(GameCtx *ctx, AvenGL *gl) {
     *ctx = (GameCtx){ 0 };
 }
 
-int game_reload(GameCtx *ctx, AvenGL *gl, AvenArena *arena) {
+int game_reload(GameCtx *ctx, AvenGL *gl) {
     game_unload(ctx, gl);
-    game_load(ctx, gl, arena);
+    game_load(ctx, gl);
 
     return 0;
 }

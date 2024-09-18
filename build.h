@@ -37,16 +37,14 @@ static inline AvenArgSlice avengl_triangle_build_args(AvenArena *arena) {
         },
         libaven_build_arg_windres_manifest,
     };
-    AvenArgSlice triangle_args = {
-        .ptr = triangle_arg_data,
-        .len = countof(triangle_arg_data),
-    };
+    AvenArgSlice triangle_args = slice_array(triangle_arg_data);
+    AvenArgSlice gl_args = libavengl_build_args();
 
-    AvenArgSlice args = { .len = triangle_args.len + libavengl_build_args.len };
+    AvenArgSlice args = { .len = triangle_args.len + gl_args.len };
     args.ptr = aven_arena_create_array(AvenArg, arena, args.len); 
     size_t i = 0;
-    for (size_t j = 0; j < libavengl_build_args.len; j += 1) {
-        slice_get(args, i) = slice_get(libavengl_build_args, j);
+    for (size_t j = 0; j < gl_args.len; j += 1) {
+        slice_get(args, i) = slice_get(gl_args, j);
         i += 1;
     }
     for (size_t j = 0; j < triangle_args.len; j += 1) {
@@ -137,12 +135,9 @@ static inline AvenBuildStep avengl_triangle_build_step_hot_dll(
         libavengl_build_include_path(libavengl_root_path, arena),
         libavengl_build_include_gles2(libavengl_root_path, arena),
     };
-    AvenStrSlice includes = {
-        .ptr = include_data,
-        .len = countof(include_data)
-    };
+    AvenStrSlice includes = slice_array(include_data);
     AvenStr macro_data[] = { aven_str("HOT_RELOAD") };
-    AvenStrSlice macros = { .ptr = macro_data, .len = countof(macro_data) };
+    AvenStrSlice macros = slice_array(macro_data);
 
     AvenBuildStep *game_step = aven_arena_create(AvenBuildStep, arena);
     *game_step = aven_build_common_step_cc_ex(
@@ -155,10 +150,7 @@ static inline AvenBuildStep avengl_triangle_build_step_hot_dll(
     );
 
     AvenBuildStep *obj_refs[] = { game_step, stb_step };
-    AvenBuildStepPtrSlice objs = {
-        .ptr = obj_refs,
-        .len = countof(obj_refs),
-    };
+    AvenBuildStepPtrSlice objs = slice_array(obj_refs);
 
     AvenBuildStep *game_dir_step = aven_arena_create(AvenBuildStep, arena);
     *game_dir_step = aven_build_common_step_subdir(
@@ -204,12 +196,9 @@ static inline AvenBuildStep avengl_triangle_build_step_hot_exe(
         libavengl_build_include_gles2(libavengl_root_path, arena),
         libavengl_build_include_glfw(libavengl_root_path, arena),
     };
-    AvenStrSlice includes = {
-        .ptr = include_data,
-        .len = countof(include_data)
-    };
+    AvenStrSlice includes = slice_array(include_data);
     AvenStr macro_data[] = { aven_str("HOT_RELOAD") };
-    AvenStrSlice macros = { .ptr = macro_data, .len = countof(macro_data) };
+    AvenStrSlice macros = slice_array(macro_data);
 
     if (triangle_opts->no_glfw) {
         includes.len -= 1;
@@ -317,10 +306,7 @@ static inline AvenBuildStep avengl_triangle_build_step_exe(
         libavengl_build_include_gles2(libavengl_root_path, arena),
         libavengl_build_include_glfw(libavengl_root_path, arena),
     };
-    AvenStrSlice includes = {
-        .ptr = include_data,
-        .len = countof(include_data)
-    };
+    AvenStrSlice includes = slice_array(include_data);
     AvenStrSlice macros = { 0 };
 
     if (triangle_opts->no_glfw) {

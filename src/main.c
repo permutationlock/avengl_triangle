@@ -113,7 +113,7 @@ void main_loop(void) {
 }
 #endif // defined(__EMSCRIPTEN__)
 
-#define ARENA_SIZE (4096 * 2000)
+#define ARENA_SIZE (GAME_ARENA_SIZE + 4096 * 4)
 
 #if defined(_MSC_VER)
 int WinMain(void) {
@@ -209,9 +209,8 @@ int main(void) {
     game_info.vtable = game_table;
 #endif // !defined(HOT_RELOAD)
 
-    AvenArena game_arena = arena;
     gl = aven_gl_load(glfwGetProcAddress);
-    ctx = game_info.vtable.init(&gl, &game_arena);
+    ctx = game_info.vtable.init(&gl, &arena);
 
 #if !defined(__EMSCRIPTEN__) // !defined(__EMSCRIPTEN__)
     while (!glfwWindowShouldClose(window)) {
@@ -233,8 +232,7 @@ int main(void) {
             } else {
                 printf("reloading\n");
                 game_info = info_result.payload;
-                game_arena = arena;
-                game_info.vtable.reload(&ctx, &gl, &game_arena);
+                game_info.vtable.reload(&ctx, &gl);
                 game_valid = true;
             }
         }
@@ -250,9 +248,13 @@ int main(void) {
         glfwPollEvents();
     }
 
+    game_info.vtable.deinit(&ctx, &gl);
+
     glfwDestroyWindow(window);
     glfwTerminate();
 #endif // !defined(__EMSCRIPTEN__)
+
+    // we let the OS free arena memory (or not in the case of Emscripten)
 
     return 0;
 }

@@ -137,10 +137,13 @@ static AvenBuildTargetToolchain aven_build_toolchain_data[] = {
         },
     },
 };
-static AvenBuildTargetToolchainSlice aven_build_target_toolchains = {
-    .ptr = aven_build_target_toolchain_data,
-    .len = countof(aven_build_target_toolchain_data),
-};
+
+static inline AvenBuildTargetToolchainSlice aven_build_target_toolchains(void) {
+    AvenBuildTargetToolchainSlice tcs = slice_array(
+        aven_build_target_toolchain_data
+    );
+    return tcs;
+}
 
 static AvenBuildTargetSystem aven_build_target_system_data[] = {
     {
@@ -173,10 +176,12 @@ static AvenBuildTargetSystem aven_build_target_system_data[] = {
         },
     },
 }
-static AvenBuildTargetSystemSlice aven_build_target_systems = {
-    .ptr = aven_build_target_system_data,
-    .len = countof(aven_build_target_system_data),
-};
+static inline AvenBuildTargetSystemSlice aven_build_target_systems(void) {
+    AvenBuildTargetSystemSlice = slice_array(
+        aven_build_target_system_data
+    );
+    return systems;
+}
 
 static AvenArg aven_build_target_config_arg_data = {
     {
@@ -238,10 +243,11 @@ static AvenArg aven_build_target_config_arg_data = {
 #endif
     },
 };
-static AvenArgSlice aven_build_target_config_args = {
-    .ptr = aven_build_target_config_arg_data,
-    .len = countof(aven_build_target_config_arg_data),
-};
+
+static inline AvenArgSlice aven_build_target_config_args(void) {
+    AvenArgSlice args = slice_array(aven_build_target_config_arg_data);
+    return args;
+}
 
 static int aven_build_target_configure(
     ArgSlice args,

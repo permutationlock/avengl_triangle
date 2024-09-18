@@ -123,7 +123,7 @@ static inline AvenStr aven_str_concat(
     AvenArena *arena
 ) {
     AvenStr str_data[] = { s1, s2 };
-    AvenStrSlice strs = { .ptr = str_data, .len = countof(str_data) };
+    AvenStrSlice strs = slice_array(str_data);
     return aven_str_concat_slice(strs, arena);
 }
 

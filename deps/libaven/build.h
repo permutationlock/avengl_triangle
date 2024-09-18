@@ -35,10 +35,7 @@ static inline AvenBuildStep libaven_build_step(
     AvenArena *arena
 ) {
     AvenStr include_paths[] = { libaven_build_include_path(root_path, arena) };
-    AvenStrSlice includes = {
-        .ptr = include_paths,
-        .len = countof(include_paths),
-    };
+    AvenStrSlice includes = slice_array(include_paths);
     AvenStrSlice macros = { 0 };
 
     return aven_build_common_step_cc_ex(

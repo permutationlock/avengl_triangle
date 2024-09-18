@@ -1,4 +1,6 @@
-#define _POSIX_C_SOURCE 200809L
+#if !defined(_WIN32) && !defined(_POSIX_C_SOURCE)
+    #define _POSIX_C_SOURCE 200112L
+#endif
 
 #include <stdlib.h>
 
@@ -17,6 +19,7 @@
 
 #include "deps/libaven/build.h"
 #include "deps/libavengl/build.h"
+
 #include "build.h"
 
 AvenArg custom_arg_data[] = {
@@ -26,10 +29,7 @@ AvenArg custom_arg_data[] = {
         .type = AVEN_ARG_TYPE_BOOL,
     },
 };
-AvenArgSlice custom_args = {
-    .ptr = custom_arg_data,
-    .len = countof(custom_arg_data),
-};
+AvenArgSlice custom_args = slice_array(custom_arg_data);
 
 typedef enum {
     REBUILD_STATE_NONE = 0,
@@ -45,12 +45,13 @@ int main(int argc, char **argv) {
 
     AvenArena arena = aven_arena_init(mem, ARENA_SIZE);
 
+    // Construct and parse build arguments
+
     AvenArgSlice triangle_args = avengl_triangle_build_args(&arena);
+    AvenArgSlice common_args = aven_build_common_args();
 
     AvenArgSlice args = {
-        .len = aven_build_common_args.len +
-            triangle_args.len +
-            custom_args.len,
+        .len = common_args.len + triangle_args.len + custom_args.len,
     };
     args.ptr = aven_arena_create_array(AvenArg, &arena, args.len);
 
@@ -64,8 +65,8 @@ int main(int argc, char **argv) {
             slice_get(args, i) = slice_get(triangle_args, j);
             i += 1;
         }
-        for (size_t j = 0; j < aven_build_common_args.len; j += 1) {
-            slice_get(args, i) = slice_get(aven_build_common_args, j);
+        for (size_t j = 0; j < common_args.len; j += 1) {
+            slice_get(args, i) = slice_get(common_args, j);
             i += 1;
         }
     }
@@ -74,8 +75,8 @@ int main(int argc, char **argv) {
         args,
         argv,
         argc,
-        aven_build_common_overview.ptr,
-        aven_build_common_usage.ptr
+        aven_build_common_overview().ptr,
+        aven_build_common_usage().ptr
     );
     if (error != 0) {
         if (error != AVEN_ARG_ERROR_HELP) {
@@ -92,6 +93,8 @@ int main(int argc, char **argv) {
     );
     bool opt_watch = aven_arg_get_bool(args, "watch");
 
+    // Build setup
+
     AvenStr root_dir = aven_str(".");
     AvenStr work_dir = aven_str("build_work");
     AvenStr out_dir = aven_str("build_out");
@@ -106,7 +109,7 @@ int main(int argc, char **argv) {
     AvenBuildStep work_dir_step = aven_build_step_mkdir(work_dir);
     AvenBuildStep out_dir_step = aven_build_step_mkdir(out_dir);
 
-    // Single translation unit build
+    // Single translation unit build steps
 
     AvenBuildStep triangle_step = avengl_triangle_build_step_exe(
         &opts,
@@ -121,7 +124,7 @@ int main(int argc, char **argv) {
     AvenBuildStep root_step = aven_build_step_root();
     aven_build_step_add_dep(&root_step, &triangle_step, &arena);
 
-    // Dynamic hot-reload build
+    // Dynamic hot-reload build steps
     
     AvenBuildStep hot_dll_step = avengl_triangle_build_step_hot_dll(
         &opts,
@@ -159,6 +162,8 @@ int main(int argc, char **argv) {
     AvenBuildStep hot_game_root_step = aven_build_step_root();
     aven_build_step_add_dep(&hot_game_root_step, &hot_signal_step, &arena);
 
+    // Run build steps according to command line options
+
     if (opts.clean) {
         aven_build_step_clean(&root_step);
         aven_build_step_clean(&hot_game_root_step);
@@ -170,10 +175,7 @@ int main(int argc, char **argv) {
             avengl_triangle_build_src_game_path(root_dir, &arena)
         );
         AvenWatchHandle handle_data[] = { src_handle, game_handle };
-        AvenWatchHandleSlice handles = {
-            .ptr = handle_data,
-            .len = countof(handle_data),
-        };
+        AvenWatchHandleSlice handles = slice_array(handle_data);
 
         Optional(AvenProcId) exe_pid = { .valid = false };
 
@@ -221,12 +223,11 @@ int main(int argc, char **argv) {
             }
 
             if (!exe_pid.valid) {
-                printf("running\n");
+                printf("RUNNING:\n");
+
                 AvenStr cmd_parts[] = { hot_exe_step.out_path.value };
-                AvenStrSlice cmd = { 
-                    .ptr = cmd_parts,
-                    .len = countof(cmd_parts),
-                };
+                AvenStrSlice cmd = slice_array(cmd_parts);
+
                 AvenProcIdResult result = aven_proc_cmd(cmd, arena);
                 if (result.error != 0) {
                     fprintf(stderr, "RUN FAILED: %d\n", result.error);

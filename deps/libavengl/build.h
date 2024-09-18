@@ -29,10 +29,11 @@ AvenArg libavengl_build_arg_data[] = {
 #endif
     },
 };
-AvenArgSlice libavengl_build_args = {
-    .ptr = libavengl_build_arg_data,
-    .len = countof(libavengl_build_arg_data),
-};
+
+static inline AvenArgSlice libavengl_build_args(void) {
+    AvenArgSlice args = slice_array(libavengl_build_arg_data);
+    return args;
+}
 
 typedef struct {
     Optional(AvenStrSlice) ccflags;
@@ -133,13 +134,12 @@ static inline AvenBuildStep libavengl_build_step_stb(
     if (libavengl_opts->stb.ccflags.valid) {
         stb_opts.cc.flags = libavengl_opts->stb.ccflags.value;
     }
+
     AvenStr include_paths[] = {
         libaven_include_path
     };
-    AvenStrSlice includes = {
-        .ptr = include_paths,
-        .len = countof(include_paths),
-    };
+    AvenStrSlice includes = slice_array(include_paths);
+
     return aven_build_common_step_cc_ex(
         &stb_opts,
         includes,
@@ -161,6 +161,7 @@ static inline AvenBuildStep libavengl_build_step_glfw(
     if (libavengl_opts->glfw.ccflags.valid) {
         glfw_opts.cc.flags = libavengl_opts->glfw.ccflags.value;
     }
+
     AvenStr include_paths[] = {
         libavengl_build_include_gles2(root_path, arena),
         libavengl_build_include_glfw(root_path, arena),
@@ -168,10 +169,8 @@ static inline AvenBuildStep libavengl_build_step_glfw(
         libavengl_build_include_x11(root_path, arena),
         libavengl_build_include_xkbcommon(root_path, arena),
     };
-    AvenStrSlice includes = {
-        .ptr = include_paths,
-        .len = countof(include_paths),
-    };
+    AvenStrSlice includes = slice_array(include_paths);
+
     return aven_build_common_step_cc_ex(
         &glfw_opts,
         includes,

@@ -55,17 +55,13 @@ typedef struct {
     bool test;
 } AvenBuildCommonOpts;
 
-static char aven_build_common_overview_cstr[] = "Aven C build system";
-static AvenStr aven_build_common_overview = {
-    .ptr = aven_build_common_overview_cstr,
-    .len = countof(aven_build_common_overview_cstr),
-};
+static inline AvenStr aven_build_common_overview(void) {
+    return aven_str("Aven C build system");
+}
 
-static char aven_build_common_usage_cstr[] = "./build [options]";
-static AvenStr aven_build_common_usage = {
-    .ptr = aven_build_common_usage_cstr,
-    .len = countof(aven_build_common_usage_cstr),
-};
+static inline AvenStr aven_build_common_usage(void) {
+    return aven_str("./build [options]");
+}
 
 AvenArg aven_build_common_args_data[] = {
     {
@@ -557,10 +553,11 @@ AvenArg aven_build_common_args_data[] = {
         },
     },
 };
-AvenArgSlice aven_build_common_args = {
-    .ptr = aven_build_common_args_data,
-    .len = countof(aven_build_common_args_data),
-};
+
+static inline AvenArgSlice aven_build_common_args(void) {
+    AvenArgSlice args = slice_array(aven_build_common_args_data);
+    return args;
+}
 
 static inline AvenBuildCommonOpts aven_build_common_opts(
     AvenArgSlice arg_slice,
