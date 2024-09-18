@@ -6,11 +6,13 @@
 #if __STDC_VERSION__ >= 201112L
     #include <stdalign.h>
     #define aven_arena_alignof(t) alignof(t)
+    #define AVEN_ARENA_BIGGEST_ALIGNMENT (alignof(max_align_t))
 #elif __STDC_VERSION__ >= 199901L
     #ifndef __BIGGEST_ALIGNMENT__
         #error "__BIGGEST_ALIGNMENT__ must be the max required alignment"
     #endif
     #define aven_arena_alignof(t) __BIGGEST_ALIGNMENT__
+    #define AVEN_ARENA_BIGGEST_ALIGNMENT __BIGGEST_ALIGNMENT__
 #else
     #error "C99 or later is required"
 #endif

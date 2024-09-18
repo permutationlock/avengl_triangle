@@ -2,12 +2,8 @@
 #include <aven.h>
 #include <aven/arena.h>
 
-#ifndef __BIGGEST_ALIGNMENT__
-    #error "__BIGGEST_ALIGNMENT__ must be the max required alignment"
-#endif
-
 static inline void *aven_stb_malloc(void *ctx, size_t size) {
-    return aven_arena_alloc(ctx, size, __BIGGEST_ALIGNMENT__);
+    return aven_arena_alloc(ctx, size, AVEN_ARENA_BIGGEST_ALIGNMENT);
 }
 
 #define STBTT_malloc(x, u) aven_stb_malloc(u, x)

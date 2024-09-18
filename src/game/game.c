@@ -61,7 +61,7 @@ GameCtx game_init(AvenGL *gl, AvenArena *arena) {
     GameCtx ctx = { 0 };
 
     ctx.init_arena = aven_arena_init(
-        aven_arena_alloc(arena, GAME_ARENA_SIZE, __BIGGEST_ALIGNMENT__),
+        aven_arena_alloc(arena, GAME_ARENA_SIZE, AVEN_ARENA_BIGGEST_ALIGNMENT),
         GAME_ARENA_SIZE
     );
 
