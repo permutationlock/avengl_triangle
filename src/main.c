@@ -31,8 +31,6 @@
         GAME_INFO_LOAD_ERROR_SYM,
     } GameInfoError;
 
-    GameInfo game_info;
-
     static GameInfoResult game_info_load(AvenStr path) {
         GameInfo game_dll = { 0 };
 
@@ -70,8 +68,6 @@
     typedef struct {
         GameTable vtable;
     } GameInfo;
-    
-    static GameInfo game_info;
 #endif // !defined(HOT_RELOAD)
 
 static void error_callback(int error, const char* description) {
@@ -93,9 +89,10 @@ static void key_callback(
     }
 }
 
-GLFWwindow *window;
-AvenGL gl;
-GameCtx ctx;
+static GLFWwindow *window;
+static AvenGL gl;
+static GameCtx ctx;
+static GameInfo game_info;
 
 #if defined(__EMSCRIPTEN__)
 #include <emscripten.h>
@@ -140,7 +137,7 @@ int main(void) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
     glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
-    // glfwWindowHint(GLFW_SAMPLES, 4);
+    glfwWindowHint(GLFW_SAMPLES, 4);
 
     window = glfwCreateWindow(
         (int)width,

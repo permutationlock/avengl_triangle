@@ -7,6 +7,10 @@
 
 #define AVEN_GLM_PI_D 3.14159265358979323846264338327950288
 #define AVEN_GLM_PI_F 3.14159265358979323846264338327950288f
+#define AVEN_GLM_SQRT2_D 1.41421356237309504880168872420969807
+#define AVEN_GLM_SQRT2_F 1.41421356237309504880168872420969807f
+#define AVEN_GLM_SQRT3_D 1.73205080756887729352744634150587236
+#define AVEN_GLM_SQRT3_F 1.73205080756887729352744634150587236f
 
 #if ( \
     defined(__GNUC__) && \
@@ -72,6 +76,14 @@ static inline void mat2_copy(Mat2 dst, Mat2 m) {
 #endif // AVEN_GLM_SIMD
 }
 
+static inline void mat2_identity(Mat2 m) {
+    Mat2 ident = {
+        { 1.0f, 0.0f },
+        { 0.0f, 1.0f },
+    };
+    mat2_copy(m, ident);
+}
+
 static inline void mat2_mul_vec2(Vec2 dst, Mat2 m, Vec2 a) {
 #ifdef AVEN_GLM_SIMD
     Vec4SIMD vm = *(Vec4SIMD *)m;
@@ -108,6 +120,30 @@ static inline void mat2_mul_mat2(Mat2 dst, Mat2 m, Mat2 n) {
     dst[1][0] = tm[0][0] * tn[1][0] + tm[1][0] * tn[1][1];
     dst[1][1] = tm[0][1] * tn[1][0] + tm[1][1] * tn[1][1];
 #endif // AVEN_GLM_SIMD
+}
+
+static inline void mat2_rotate(Mat2 dst, Mat2 m, float theta) {
+    float sin_theta = sinf(theta);
+    float cos_theta = cosf(theta);
+    Mat2 rot = {
+        {  cos_theta, sin_theta },
+        { -sin_theta, cos_theta },
+    };
+    mat2_mul_mat2(dst, m, rot);
+}
+
+static inline void mat2_ortho(
+    Mat2 dst,
+    float left,
+    float right,
+    float bot,
+    float top
+) {
+    Mat2 m = {
+        { 2.0f / (right - left),               0.0f },
+        {                  0.0f, 2.0f / (top - bot) },
+    };
+    mat2_copy(dst, m);
 }
 
 static inline void vec3_copy(Vec3 dst, Vec3 a) {

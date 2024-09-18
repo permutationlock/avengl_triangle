@@ -8,13 +8,14 @@
 #include <aven.h>
 #include <aven/gl.h>
 #include <aven/glm.h>
+#include <aven/gl/shape.h>
 #include <aven/gl/text.h>
 #include <aven/time.h>
 
 #include "../game.h"
 #include "font.h"
 
-#define ROTATION_VELOCITY (2.0f * AVEN_GLM_PI_F / 100.0f)
+#define ROTATION_VELOCITY (2.0f * AVEN_GLM_PI_F / 50.0f)
 #define MAX_VERTICES 256
 #define MAX_INDICES 512
 
@@ -32,9 +33,16 @@ const GameTable game_table = {
 
 static void game_load(GameCtx *ctx, AvenGL *gl, AvenArena *arena) {
     ctx->text_geometry = aven_gl_text_geometry_init(gl, ctx->font, 128, arena);
+    ctx->shape_color_geometry = aven_gl_shape_color_geometry_init(
+        gl,
+        128,
+        192,
+        arena
+    );
 }
 
 static void game_unload(GameCtx *ctx, AvenGL *gl) {
+    aven_gl_shape_color_geometry_deinit(&ctx->shape_color_geometry, gl);
     aven_gl_text_geometry_deinit(&ctx->text_geometry, gl);
 }
 
@@ -88,23 +96,48 @@ int game_update(
     gl->Clear(GL_COLOR_BUFFER_BIT);
     assert(gl->GetError() == 0);
 
-    Mat4 id_m, rot_m, per_m, mvp;
-    mat4_identity(id_m);
-    mat4_rotate_z(rot_m, id_m, ctx->angle);
-    mat4_ortho(per_m, ratio, -ratio, -1.0f, 1.0f, 1.0f, -1.0f);
-    mat4_mul_mat4(mvp, per_m, rot_m);
+    Mat2 mi;
+    mat2_identity(mi);
+    Mat2 mr;
+    mat2_rotate(mr, mi, ctx->angle);
+    Mat2 mp;
+    mat2_ortho(mp, -ratio, ratio, 1.0f, -1.0f);
+    Mat2 mvp;
+    mat2_mul_mat2(mvp, mp, mr);
+
+    Vec2 pos = { 0.0f, 0.0f };
 
     aven_gl_text_geometry_clear(&ctx->text_geometry);
-    aven_gl_text_geometry_push(
-        &ctx->text_geometry,
-        0.0f,
-        0.0f,
-        pixel_size,
-        (Vec4){ 1.0f, 1.0f, 1.0f, 1.0f },
-        aven_str("Say what?!")
+    aven_gl_shape_color_geometry_clear(&ctx->shape_color_geometry);
+
+    aven_gl_shape_color_geometry_push_rectangle(
+        &ctx->shape_color_geometry,
+        (Vec2){ -0.5f, -0.5f },
+        (Vec2){ 0.4f, 0.4f },
+        ctx->angle,
+        0.25f,
+        (Vec4){ 0.75f, 0.75f, 0.0f, 1.0f }
     );
 
-    aven_gl_text_geometry_draw(&ctx->text_geometry, gl, mvp);
+    aven_gl_shape_color_geometry_push_triangle_equilateral(
+        &ctx->shape_color_geometry,
+        (Vec2){ 0.5f, 0.5f },
+        0.25f,
+        ctx->angle,
+        0.25f,
+        (Vec4){ 0.15f, 0.45f, 0.75f, 1.0f }
+    );
+
+    aven_gl_text_geometry_push(
+        &ctx->text_geometry,
+        (Vec2){ 0.0f, 0.0f },
+        pixel_size,
+        (Vec4){ 1.0f, 1.0f, 1.0f, 1.0f },
+        aven_str("Hello, World!")
+    );
+
+    aven_gl_shape_color_geometry_draw(&ctx->shape_color_geometry, gl, mvp, pos);
+    aven_gl_text_geometry_draw(&ctx->text_geometry, gl, mvp, pos);
 
     return 0;
 }

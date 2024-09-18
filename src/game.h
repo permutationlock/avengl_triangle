@@ -2,6 +2,7 @@
 #define GAME_H
 
 #include <aven/gl.h>
+#include <aven/gl/shape.h>
 #include <aven/gl/text.h>
 #include <aven/time.h>
 
@@ -19,6 +20,7 @@
 typedef struct {
     AvenGLTextFont font;
     AvenGLTextGeometry text_geometry;
+    AvenGLShapeColorGeometry shape_color_geometry;
     AvenTimeInst last_update;
     float angle;
 } GameCtx;
