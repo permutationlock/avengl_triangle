@@ -18,8 +18,6 @@
 #include "font.h"
 
 #define ROTATION_VELOCITY (2.0f * AVEN_GLM_PI_F / 10.0f)
-#define MAX_VERTICES 256
-#define MAX_INDICES 512
 
 #if !defined(HOT_RELOAD)
 static
