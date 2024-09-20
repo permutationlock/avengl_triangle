@@ -61,11 +61,9 @@ static void game_load(GameCtx *ctx, AvenGL *gl) {
 static void game_unload(GameCtx *ctx, AvenGL *gl) {
     aven_gl_shape_buffer_deinit(gl, &ctx->shapes.buffer);
     aven_gl_shape_ctx_deinit(gl, &ctx->shapes.ctx);
-    ctx->shapes = (GameShapes){ 0 };
 
     aven_gl_text_buffer_deinit(gl, &ctx->text.buffer);
     aven_gl_text_ctx_deinit(gl, &ctx->text.ctx);
-    ctx->text = (GameText){ 0 };
 }
 
 GameCtx game_init(AvenGL *gl, AvenArena *arena) {
