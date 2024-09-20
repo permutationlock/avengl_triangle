@@ -34,6 +34,14 @@ const GameTable game_table = {
 static void game_load(GameCtx *ctx, AvenGL *gl) {
     ctx->arena = ctx->init_arena;
 
+    ByteSlice font_bytes = array_as_bytes(game_font_opensans_ttf);
+    ctx->text.font = aven_gl_text_font_init(
+        gl,
+        font_bytes,
+        24.0f,
+        ctx->init_arena
+    );
+
     ctx->text.ctx = aven_gl_text_ctx_init(gl);
     ctx->text.geometry = aven_gl_text_geometry_init(
         128,
@@ -61,9 +69,11 @@ static void game_load(GameCtx *ctx, AvenGL *gl) {
 static void game_unload(GameCtx *ctx, AvenGL *gl) {
     aven_gl_shape_buffer_deinit(gl, &ctx->shapes.buffer);
     aven_gl_shape_ctx_deinit(gl, &ctx->shapes.ctx);
+    ctx->shapes = (GameShapes){ 0 };
 
     aven_gl_text_buffer_deinit(gl, &ctx->text.buffer);
     aven_gl_text_ctx_deinit(gl, &ctx->text.ctx);
+    ctx->text = (GameText){ 0 };
 }
 
 GameCtx game_init(AvenGL *gl, AvenArena *arena) {
@@ -72,14 +82,6 @@ GameCtx game_init(AvenGL *gl, AvenArena *arena) {
     ctx.init_arena = aven_arena_init(
         aven_arena_alloc(arena, GAME_ARENA_SIZE, AVEN_ARENA_BIGGEST_ALIGNMENT),
         GAME_ARENA_SIZE
-    );
-
-    ByteSlice font_bytes = array_as_bytes(game_font_opensans_ttf);
-    ctx.text.font = aven_gl_text_font_init(
-        gl,
-        font_bytes,
-        24.0f,
-        ctx.init_arena
     );
 
     game_load(&ctx, gl);
@@ -118,7 +120,7 @@ int game_update(
     ctx->angle += ROTATION_VELOCITY * elapsed_sec;
 
     float ratio = (float)width / (float)height;
-    float pixel_size = 2.0f / (float)height;
+    float pixel_size = 4.0f / (float)height;
 
     gl->Viewport(0, 0, width, height);
     assert(gl->GetError() == 0);

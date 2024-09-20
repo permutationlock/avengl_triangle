@@ -17,10 +17,10 @@ typedef struct {
 } GameShapes;
 
 typedef struct {
+    AvenGLTextFont font;
     AvenGLTextCtx ctx;
     AvenGLTextGeometry geometry;
     AvenGLTextBuffer buffer;
-    AvenGLTextFont font;
 } GameText;
 
 typedef struct {
