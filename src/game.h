@@ -11,9 +11,21 @@
 #define GAME_ARENA_SIZE (4096 * 2000)
 
 typedef struct {
+    AvenGLShapeCtx ctx;
+    AvenGLShapeGeometry geometry;
+    AvenGLShapeBuffer buffer;
+} GameShapes;
+
+typedef struct {
+    AvenGLTextCtx ctx;
+    AvenGLTextGeometry geometry;
+    AvenGLTextBuffer buffer;
     AvenGLTextFont font;
-    AvenGLTextGeometry text_geometry;
-    AvenGLShapeColorGeometry shape_color_geometry;
+} GameText;
+
+typedef struct {
+    GameText text;
+    GameShapes shapes;
     AvenArena init_arena;
     AvenArena arena;
     AvenTimeInst last_update;

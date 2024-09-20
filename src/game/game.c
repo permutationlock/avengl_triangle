@@ -17,7 +17,7 @@
 #include "../game.h"
 #include "font.h"
 
-#define ROTATION_VELOCITY (2.0f * AVEN_GLM_PI_F / 10.0f)
+#define ROTATION_VELOCITY (2.0f * AVEN_GLM_PI_F / 100.0f)
 
 #if !defined(HOT_RELOAD)
 static
@@ -33,26 +33,39 @@ const GameTable game_table = {
 
 static void game_load(GameCtx *ctx, AvenGL *gl) {
     ctx->arena = ctx->init_arena;
-    ctx->text_geometry = aven_gl_text_geometry_init(
-        gl,
-        ctx->font,
+
+    ctx->text.ctx = aven_gl_text_ctx_init(gl);
+    ctx->text.geometry = aven_gl_text_geometry_init(
         128,
         &ctx->arena
     );
-    ctx->shape_color_geometry = aven_gl_shape_color_geometry_init(
+    ctx->text.buffer = aven_gl_text_buffer_init(
         gl,
+        &ctx->text.geometry,
+        AVEN_GL_BUFFER_USAGE_DYNAMIC
+    );
+
+    ctx->shapes.ctx = aven_gl_shape_ctx_init(gl);
+    ctx->shapes.geometry = aven_gl_shape_geometry_init(
         128,
         192,
         &ctx->arena
     );
+    ctx->shapes.buffer = aven_gl_shape_buffer_init(
+        gl,
+        &ctx->shapes.geometry,
+        AVEN_GL_BUFFER_USAGE_DYNAMIC
+    );
 }
 
 static void game_unload(GameCtx *ctx, AvenGL *gl) {
-    aven_gl_shape_color_geometry_deinit(&ctx->shape_color_geometry, gl);
-    aven_gl_text_geometry_deinit(&ctx->text_geometry, gl);
+    aven_gl_shape_buffer_deinit(gl, &ctx->shapes.buffer);
+    aven_gl_shape_ctx_deinit(gl, &ctx->shapes.ctx);
+    ctx->shapes = (GameShapes){ 0 };
 
-    ctx->shape_color_geometry = (AvenGLShapeColorGeometry){ 0 };
-    ctx->text_geometry = (AvenGLTextGeometry){ 0 };
+    aven_gl_text_buffer_deinit(gl, &ctx->text.buffer);
+    aven_gl_text_ctx_deinit(gl, &ctx->text.ctx);
+    ctx->text = (GameText){ 0 };
 }
 
 GameCtx game_init(AvenGL *gl, AvenArena *arena) {
@@ -64,7 +77,12 @@ GameCtx game_init(AvenGL *gl, AvenArena *arena) {
     );
 
     ByteSlice font_bytes = array_as_bytes(game_font_opensans_ttf);
-    ctx.font = aven_gl_text_font_init(gl, font_bytes, 64.0f, ctx.init_arena);
+    ctx.text.font = aven_gl_text_font_init(
+        gl,
+        font_bytes,
+        24.0f,
+        ctx.init_arena
+    );
 
     game_load(&ctx, gl);
 
@@ -75,7 +93,7 @@ GameCtx game_init(AvenGL *gl, AvenArena *arena) {
 }
 
 void game_deinit(GameCtx *ctx, AvenGL *gl) {
-    aven_gl_text_font_deinit(&ctx->font, gl);
+    aven_gl_text_font_deinit(gl, &ctx->text.font);
     game_unload(ctx, gl);
     *ctx = (GameCtx){ 0 };
 }
@@ -120,20 +138,20 @@ int game_update(
 
     Vec2 pos = { 0.0f, 0.0f };
 
-    aven_gl_text_geometry_clear(&ctx->text_geometry);
-    aven_gl_shape_color_geometry_clear(&ctx->shape_color_geometry);
+    aven_gl_text_geometry_clear(&ctx->text.geometry);
+    aven_gl_shape_geometry_clear(&ctx->shapes.geometry);
 
-    aven_gl_shape_color_geometry_push_rectangle(
-        &ctx->shape_color_geometry,
+    aven_gl_shape_geometry_push_rectangle(
+        &ctx->shapes.geometry,
         (Vec2){ -0.5f, -0.5f },
         (Vec2){ 0.4f, 0.4f },
         ctx->angle,
-        0.25f,
+        0.8f,
         (Vec4){ 0.75f, 0.75f, 0.0f, 1.0f }
     );
 
-    aven_gl_shape_color_geometry_push_triangle_equilateral(
-        &ctx->shape_color_geometry,
+    aven_gl_shape_geometry_push_triangle_equilateral(
+        &ctx->shapes.geometry,
         (Vec2){ 0.5f, 0.5f },
         0.25f,
         ctx->angle,
@@ -142,15 +160,32 @@ int game_update(
     );
 
     aven_gl_text_geometry_push(
-        &ctx->text_geometry,
+        &ctx->text.geometry,
+        &ctx->text.font,
         (Vec2){ 0.0f, 0.0f },
         pixel_size,
         (Vec4){ 1.0f, 1.0f, 1.0f, 1.0f },
         aven_str("Hello, World!")
     );
 
-    aven_gl_shape_color_geometry_draw(&ctx->shape_color_geometry, gl, mvp, pos);
-    aven_gl_text_geometry_draw(&ctx->text_geometry, gl, mvp, pos);
+    aven_gl_shape_buffer_update(gl, &ctx->shapes.buffer, &ctx->shapes.geometry);
+    aven_gl_text_buffer_update(gl, &ctx->text.buffer, &ctx->text.geometry);
+
+    aven_gl_shape_draw(
+        gl,
+        &ctx->shapes.ctx,
+        &ctx->shapes.buffer,
+        mvp,
+        pos
+    );
+    aven_gl_text_geometry_draw(
+        gl,
+        &ctx->text.ctx,
+        &ctx->text.buffer,
+        &ctx->text.font,
+        mvp,
+        pos
+    );
 
     return 0;
 }

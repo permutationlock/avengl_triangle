@@ -31,7 +31,6 @@ static inline AvenArena aven_arena_init(void *mem, size_t size) {
     return (AvenArena){ .base = mem, .top = (unsigned char *)mem + size };
 }
 
-
 #if __has_attribute(malloc)
     __attribute__((malloc))
 #endif

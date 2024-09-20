@@ -95,22 +95,22 @@ static GameCtx ctx;
 static GameInfo game_info;
 
 #if defined(__EMSCRIPTEN__)
-#include <emscripten.h>
+    #include <emscripten.h>
 
-#ifdef HOT_RELOAD
-    #error "hot reloading dll incompatible with emcc"
-#endif
+    #ifdef HOT_RELOAD
+        #error "hot reloading dll incompatible with emcc"
+    #endif
 
-void main_loop(void) {
-    int width;
-    int height;
-    glfwGetFramebufferSize(window, &width, &height);
+    void main_loop(void) {
+        int width;
+        int height;
+        glfwGetFramebufferSize(window, &width, &height);
 
-    game_info.vtable.update(&ctx, &gl, width, height);
+        game_info.vtable.update(&ctx, &gl, width, height);
 
-    glfwSwapBuffers(window);
-    glfwPollEvents();
-}
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
 #endif // defined(__EMSCRIPTEN__)
 
 #define ARENA_SIZE (GAME_ARENA_SIZE + 4096 * 4)
@@ -122,6 +122,8 @@ int main(void) {
 #endif // !defined(_MSC_VER)
     aven_fs_utf8_mode();
 
+    // could probably switch to raw page allocation, but malloc is simple and
+    // we are dynamically linking the system libc anyway
     void *mem = malloc(ARENA_SIZE);
     assert(mem != NULL);
 
@@ -137,6 +139,8 @@ int main(void) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
     glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
+    // raster msaa sample count should try to match the sample count of 4 used
+    // for multisampling in our shape fragment shaders and stb font textures
     glfwWindowHint(GLFW_SAMPLES, 4);
 
     window = glfwCreateWindow(
@@ -254,7 +258,7 @@ int main(void) {
     glfwTerminate();
 #endif // !defined(__EMSCRIPTEN__)
 
-    // we let the OS free arena memory (or not in the case of Emscripten)
+    // we let the OS free arena memory (or leave it in the case of Emscripten)
 
     return 0;
 }

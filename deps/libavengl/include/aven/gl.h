@@ -586,4 +586,10 @@ static inline AvenGL aven_gl_load(AvenGLLoadProcFn load) {
     return gl;
 }
 
+typedef enum {
+    AVEN_GL_BUFFER_USAGE_STATIC = GL_STATIC_DRAW,
+    AVEN_GL_BUFFER_USAGE_DYNAMIC = GL_DYNAMIC_DRAW,
+    AVEN_GL_BUFFER_USAGE_STREAM = GL_STREAM_DRAW,
+} AvenGLBufferUsage;
+
 #endif // AVEN_GL_H
