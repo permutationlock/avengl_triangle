@@ -87,7 +87,7 @@ int main(int argc, char **argv) {
     }
 
     AvenBuildCommonOpts opts = aven_build_common_opts(args, &arena);
-    AvenGLTriangleBuildOpts triangle_opts = avengl_triangle_build_opts(
+    AvenGlTriangleBuildOpts triangle_opts = avengl_triangle_build_opts(
         args,
         &arena
     );

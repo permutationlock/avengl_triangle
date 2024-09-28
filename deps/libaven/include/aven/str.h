@@ -34,7 +34,7 @@ static inline bool aven_str_compare(AvenStr s1, AvenStr s2) {
 
 static inline AvenStr aven_str_copy(AvenStr str, AvenArena *arena) {
     AvenStr cpy = { .len = str.len };
-    cpy.ptr = aven_arena_alloc(arena, cpy.len + 1, 1);
+    cpy.ptr = aven_arena_alloc(arena, cpy.len + 1, 1, 1);
     slice_copy(cpy, str);
     cpy.ptr[cpy.len] = 0;
     return cpy;
@@ -73,7 +73,7 @@ static inline AvenStrSlice aven_str_split(
         if (i == str.len or slice_get(str, i) == separator) {
             size_t len = i - after_last_sep;
             if (len > 0) {
-                char *string_mem = aven_arena_alloc(arena, len + 1, 1);
+                char *string_mem = aven_arena_alloc(arena, len + 1, 1, 1);
 
                 slice_get(split_strs, string_index) = (AvenStr){
                     .ptr = string_mem,
@@ -102,7 +102,7 @@ static inline AvenStr aven_str_concat_slice(
     }
 
     AvenStr new_string = { .len = total_len };
-    new_string.ptr = aven_arena_alloc(arena, total_len + 1, 1);
+    new_string.ptr = aven_arena_alloc(arena, total_len + 1, 1, 1);
 
     AvenStr rest_string = new_string;
     for (size_t i = 0; i < strs.len; i += 1) {
@@ -145,7 +145,7 @@ static inline AvenStr aven_str_join(
         }
     }
    
-    char *str_mem = aven_arena_alloc(arena, len + 1, 1);
+    char *str_mem = aven_arena_alloc(arena, len + 1, 1, 1);
 
     AvenStr new_str = { .ptr = str_mem, .len = len };
     AvenStr rest_str = new_str;

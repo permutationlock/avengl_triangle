@@ -38,22 +38,22 @@ static inline AvenArgSlice libavengl_build_args(void) {
 typedef struct {
     Optional(AvenStrSlice) ccflags;
     bool external;
-} LibAvenGLBuildGLFWOpts;
+} LibAvenGlBuildGLFWOpts;
 
 typedef struct {
     Optional(AvenStrSlice) ccflags;
-} LibAvenGLBuildSTBOpts;
+} LibAvenGlBuildSTBOpts;
 
 typedef struct {
-    LibAvenGLBuildGLFWOpts glfw;
-    LibAvenGLBuildSTBOpts stb;
-} LibAvenGLBuildOpts;
+    LibAvenGlBuildGLFWOpts glfw;
+    LibAvenGlBuildSTBOpts stb;
+} LibAvenGlBuildOpts;
 
-static inline LibAvenGLBuildOpts libavengl_build_opts(
+static inline LibAvenGlBuildOpts libavengl_build_opts(
     AvenArgSlice args,
     AvenArena *arena
 ) {
-    LibAvenGLBuildOpts opts = { 0 };
+    LibAvenGlBuildOpts opts = { 0 };
     if (aven_arg_has_arg(args, "-glfw-ccflags")) {
         opts.glfw.ccflags.valid = true;
         opts.glfw.ccflags.value = aven_str_split(
@@ -124,7 +124,7 @@ static inline AvenStr libavengl_build_include_xkbcommon(
 
 static inline AvenBuildStep libavengl_build_step_stb(
     AvenBuildCommonOpts *opts,
-    LibAvenGLBuildOpts *libavengl_opts,
+    LibAvenGlBuildOpts *libavengl_opts,
     AvenStr libaven_include_path,
     AvenStr root_path,
     AvenBuildStep *out_dir_step,
@@ -152,7 +152,7 @@ static inline AvenBuildStep libavengl_build_step_stb(
 
 static inline AvenBuildStep libavengl_build_step_glfw(
     AvenBuildCommonOpts *opts,
-    LibAvenGLBuildOpts *libavengl_opts,
+    LibAvenGlBuildOpts *libavengl_opts,
     AvenStr root_path,
     AvenBuildStep *out_dir_step,
     AvenArena *arena

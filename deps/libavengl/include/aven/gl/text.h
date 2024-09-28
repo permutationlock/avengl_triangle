@@ -18,18 +18,18 @@ typedef struct {
    float xadvance;
    float xoff2;
    float yoff2;
-} AvenGLTextChar;
+} AvenGlTextChar;
 
 typedef struct {
-    AvenGLTextChar packed_chars[96];
+    AvenGlTextChar packed_chars[96];
     float height;
     GLuint texture_id;
     int texture_width;
     int texture_height;
-} AvenGLTextFont;
+} AvenGlTextFont;
 
-static inline AvenGLTextFont aven_gl_text_font_init(
-    AvenGL *gl,
+static inline AvenGlTextFont aven_gl_text_font_init(
+    AvenGl *gl,
     ByteSlice font_bytes,
     float font_height,
     AvenArena arena
@@ -68,7 +68,7 @@ static inline AvenGLTextFont aven_gl_text_font_init(
         float font_size,
         int first_unicode_char_in_range,
         int num_chars_in_range,
-        AvenGLTextChar *chardata_for_range
+        AvenGlTextChar *chardata_for_range
     );
 
     AvenArena temp_arena;
@@ -77,7 +77,7 @@ static inline AvenGLTextFont aven_gl_text_font_init(
     int char_dim = (int)((font_height + 2.0f) * 2.0f);
 
     int success = 0;
-    AvenGLTextFont font = { .height = font_height };
+    AvenGlTextFont font = { .height = font_height };
     ByteSlice texture_bytes = { 0 };
     do {
         temp_arena = arena;
@@ -86,7 +86,12 @@ static inline AvenGLTextFont aven_gl_text_font_init(
         font.texture_height = char_dim * nrows;
         texture_bytes.len = (size_t)font.texture_width *
             (size_t)font.texture_height;
-        texture_bytes.ptr = aven_arena_alloc(&temp_arena, texture_bytes.len, 1);
+        texture_bytes.ptr = aven_arena_alloc(
+            &temp_arena,
+            1,
+            1,
+            texture_bytes.len
+        );
 
         struct stbtt_pack_context ctx = { 0 };
         success = stbtt_PackBegin(
@@ -150,7 +155,7 @@ static inline AvenGLTextFont aven_gl_text_font_init(
     return font;
 }
 
-static inline void aven_gl_text_font_deinit(AvenGL *gl, AvenGLTextFont *font) {
+static inline void aven_gl_text_font_deinit(AvenGl *gl, AvenGlTextFont *font) {
     gl->DeleteTextures(1, &font->texture_id);
 }
 
@@ -158,7 +163,7 @@ typedef struct {
     Vec2 pos;
     Vec2 tex;
     Vec4 color;
-} AvenGLTextVertex;
+} AvenGlTextVertex;
 
 typedef struct {
     GLuint vertex_shader;
@@ -169,7 +174,7 @@ typedef struct {
     GLuint vpos_location;
     GLuint vtex_location;
     GLuint vcolor_location;
-} AvenGLTextCtx;
+} AvenGlTextCtx;
 
 typedef struct {
     size_t vertex_cap;
@@ -177,25 +182,25 @@ typedef struct {
     size_t index_len;
     GLuint vertex;
     GLuint index;
-    AvenGLBufferUsage usage;
-} AvenGLTextBuffer;
+    AvenGlBufferUsage usage;
+} AvenGlTextBuffer;
 
 typedef struct {
-    List(AvenGLTextVertex) vertices;
+    List(AvenGlTextVertex) vertices;
     List(GLushort) indices;
-} AvenGLTextGeometry;
+} AvenGlTextGeometry;
 
-static inline AvenGLTextGeometry aven_gl_text_geometry_init(
+static inline AvenGlTextGeometry aven_gl_text_geometry_init(
     size_t max_chars,
     AvenArena *arena
 ) {
-    AvenGLTextGeometry geometry = {
+    AvenGlTextGeometry geometry = {
         .vertices = { .cap = max_chars * 4 },
         .indices = { .cap = max_chars * 6 },
     };
 
     geometry.vertices.ptr = aven_arena_create_array(
-        AvenGLTextVertex,
+        AvenGlTextVertex,
         arena,
         geometry.vertices.cap
     );
@@ -208,13 +213,13 @@ static inline AvenGLTextGeometry aven_gl_text_geometry_init(
     return geometry;
 }
 
-static inline void aven_gl_text_geometry_clear(AvenGLTextGeometry *geometry) {
+static inline void aven_gl_text_geometry_clear(AvenGlTextGeometry *geometry) {
     geometry->vertices.len = 0;
     geometry->indices.len = 0;
 }
 
-static inline AvenGLTextCtx aven_gl_text_ctx_init(AvenGL *gl) {
-    AvenGLTextCtx ctx = { 0 };
+static inline AvenGlTextCtx aven_gl_text_ctx_init(AvenGl *gl) {
+    AvenGlTextCtx ctx = { 0 };
 
     static const char* vertex_shader_text =
         "#version 100\n"
@@ -297,18 +302,18 @@ static inline AvenGLTextCtx aven_gl_text_ctx_init(AvenGL *gl) {
     return ctx;
 }
 
-static inline void aven_gl_text_ctx_deinit(AvenGL *gl, AvenGLTextCtx *ctx) {
+static inline void aven_gl_text_ctx_deinit(AvenGl *gl, AvenGlTextCtx *ctx) {
     gl->DeleteProgram(ctx->program);
     gl->DeleteShader(ctx->fragment_shader);
     gl->DeleteShader(ctx->vertex_shader);
 }
 
-static inline AvenGLTextBuffer aven_gl_text_buffer_init(
-    AvenGL *gl,
-    AvenGLTextGeometry *geometry,
-    AvenGLBufferUsage buffer_usage
+static inline AvenGlTextBuffer aven_gl_text_buffer_init(
+    AvenGl *gl,
+    AvenGlTextGeometry *geometry,
+    AvenGlBufferUsage buffer_usage
 ) {
-    AvenGLTextBuffer buffer = { .usage = buffer_usage };
+    AvenGlTextBuffer buffer = { .usage = buffer_usage };
 
     switch (buffer_usage) {
         case AVEN_GL_BUFFER_USAGE_DYNAMIC:
@@ -362,12 +367,12 @@ static inline AvenGLTextBuffer aven_gl_text_buffer_init(
 }
 
 static inline void aven_gl_text_buffer_deinit(
-    AvenGL *gl,
-    AvenGLTextBuffer *buffer
+    AvenGl *gl,
+    AvenGlTextBuffer *buffer
 ) {
     gl->DeleteBuffers(1, &buffer->index);
     gl->DeleteBuffers(1, &buffer->vertex);
-    *buffer = (AvenGLTextBuffer){ 0 };
+    *buffer = (AvenGlTextBuffer){ 0 };
 }
 
 typedef struct {
@@ -379,24 +384,24 @@ typedef struct {
     float y1;
     float s1;
     float t1;
-} AvenGLTextQuad;
+} AvenGlTextQuad;
 
 static inline float aven_gl_text_geometry_push(
-    AvenGLTextGeometry *geometry,
-    AvenGLTextFont *font,
+    AvenGlTextGeometry *geometry,
+    AvenGlTextFont *font,
     Vec2 pos,
     float pixel_size,
     Vec4 color,
     AvenStr text
 ) {
     void stbtt_GetPackedQuad(
-        const AvenGLTextChar *chardata,
+        const AvenGlTextChar *chardata,
         int pw,
         int ph,
         int char_index,
         float *xpos,
         float *ypos,
-        AvenGLTextQuad *q,
+        AvenGlTextQuad *q,
         int align_to_integer
     );
 
@@ -406,7 +411,7 @@ static inline float aven_gl_text_geometry_push(
     for (size_t i = 0; i < text.len; i += 1) {
         int pc_index = slice_get(text, i) - 32;
 
-        AvenGLTextQuad q;
+        AvenGlTextQuad q;
         stbtt_GetPackedQuad(
             font->packed_chars,
             font->texture_width,
@@ -420,22 +425,22 @@ static inline float aven_gl_text_geometry_push(
 
         size_t start_index = geometry->vertices.len;
 
-        list_push(geometry->vertices) = (AvenGLTextVertex){
+        list_push(geometry->vertices) = (AvenGlTextVertex){
             .pos = { q.x0 * pixel_size + pos[0], q.y0 * pixel_size + pos[1] },
             .tex = { q.s0, q.t0, },
             .color = { color[0], color[1], color[2], color[3] },
         };
-        list_push(geometry->vertices) = (AvenGLTextVertex){
+        list_push(geometry->vertices) = (AvenGlTextVertex){
             .pos = { q.x1 * pixel_size + pos[0], q.y0 * pixel_size + pos[1] },
             .tex = { q.s1, q.t0, },
             .color = { color[0], color[1], color[2], color[3] },
         };
-        list_push(geometry->vertices) = (AvenGLTextVertex){
+        list_push(geometry->vertices) = (AvenGlTextVertex){
             .pos = { q.x1 * pixel_size + pos[0], q.y1 * pixel_size + pos[1] },
             .tex = { q.s1, q.t1, },
             .color = { color[0], color[1], color[2], color[3] },
         };
-        list_push(geometry->vertices) = (AvenGLTextVertex){
+        list_push(geometry->vertices) = (AvenGlTextVertex){
             .pos = { q.x0 * pixel_size + pos[0], q.y1 * pixel_size + pos[1] },
             .tex = { q.s0, q.t1, },
             .color = { color[0], color[1], color[2], color[3] },
@@ -453,18 +458,18 @@ static inline float aven_gl_text_geometry_push(
 }
 
 static inline float aven_gl_text_geometry_width(
-    AvenGLTextFont *font,
+    AvenGlTextFont *font,
     float pixel_size,
     AvenStr text
 ) {
     void stbtt_GetPackedQuad(
-        const AvenGLTextChar *chardata,
+        const AvenGlTextChar *chardata,
         int pw,
         int ph,
         int char_index,
         float *xpos,
         float *ypos,
-        AvenGLTextQuad *q,
+        AvenGlTextQuad *q,
         int align_to_integer
     );
 
@@ -474,7 +479,7 @@ static inline float aven_gl_text_geometry_width(
     for (size_t i = 0; i < text.len; i += 1) {
         int pc_index = slice_get(text, i) - 32;
 
-        AvenGLTextQuad q;
+        AvenGlTextQuad q;
         stbtt_GetPackedQuad(
             font->packed_chars,
             font->texture_width,
@@ -491,9 +496,9 @@ static inline float aven_gl_text_geometry_width(
 }
 
 static inline void aven_gl_text_buffer_update(
-    AvenGL *gl,
-    AvenGLTextBuffer *buffer,
-    AvenGLTextGeometry *geometry
+    AvenGl *gl,
+    AvenGlTextBuffer *buffer,
+    AvenGlTextGeometry *geometry
 ) {
     assert(buffer->usage == AVEN_GL_BUFFER_USAGE_DYNAMIC);
     assert(geometry->vertices.len < buffer->vertex_cap);
@@ -528,10 +533,10 @@ static inline void aven_gl_text_buffer_update(
 }
 
 static inline void aven_gl_text_geometry_draw(
-    AvenGL *gl,
-    AvenGLTextCtx *ctx,
-    AvenGLTextBuffer *buffer,
-    AvenGLTextFont *font,
+    AvenGl *gl,
+    AvenGlTextCtx *ctx,
+    AvenGlTextBuffer *buffer,
+    AvenGlTextFont *font,
     Mat2 cam_trans,
     Vec2 cam_pos
 ) {
@@ -554,8 +559,8 @@ static inline void aven_gl_text_geometry_draw(
         2,
         GL_FLOAT,
         GL_FALSE,
-        sizeof(AvenGLTextVertex),
-        (void*)offsetof(AvenGLTextVertex, pos)
+        sizeof(AvenGlTextVertex),
+        (void*)offsetof(AvenGlTextVertex, pos)
     );
     assert(gl->GetError() == 0);
     gl->VertexAttribPointer(
@@ -563,8 +568,8 @@ static inline void aven_gl_text_geometry_draw(
         2,
         GL_FLOAT,
         GL_FALSE,
-        sizeof(AvenGLTextVertex),
-        (void*)offsetof(AvenGLTextVertex, tex)
+        sizeof(AvenGlTextVertex),
+        (void*)offsetof(AvenGlTextVertex, tex)
     );
     assert(gl->GetError() == 0);
     gl->VertexAttribPointer(
@@ -572,8 +577,8 @@ static inline void aven_gl_text_geometry_draw(
         4,
         GL_FLOAT,
         GL_FALSE,
-        sizeof(AvenGLTextVertex),
-        (void*)offsetof(AvenGLTextVertex, color)
+        sizeof(AvenGlTextVertex),
+        (void*)offsetof(AvenGlTextVertex, color)
     );
     assert(gl->GetError() == 0);
     gl->Enable(GL_BLEND);

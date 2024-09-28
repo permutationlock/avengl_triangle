@@ -17,7 +17,7 @@
 #include "../game.h"
 #include "font.h"
 
-#define ROTATION_VELOCITY (2.0f * AVEN_GLM_PI_F / 100.0f)
+#define ROTATION_VELOCITY (2.0f * AVEN_GLM_PI_F / 10.0f)
 
 #if !defined(HOT_RELOAD)
 static
@@ -31,7 +31,7 @@ const GameTable game_table = {
     .deinit = game_deinit,
 };
 
-static void game_load(GameCtx *ctx, AvenGL *gl) {
+static void game_load(GameCtx *ctx, AvenGl *gl) {
     ctx->arena = ctx->init_arena;
 
     ByteSlice font_bytes = array_as_bytes(game_font_opensans_ttf);
@@ -66,7 +66,7 @@ static void game_load(GameCtx *ctx, AvenGL *gl) {
     );
 }
 
-static void game_unload(GameCtx *ctx, AvenGL *gl) {
+static void game_unload(GameCtx *ctx, AvenGl *gl) {
     aven_gl_shape_buffer_deinit(gl, &ctx->shapes.buffer);
     aven_gl_shape_ctx_deinit(gl, &ctx->shapes.ctx);
     ctx->shapes = (GameShapes){ 0 };
@@ -76,11 +76,16 @@ static void game_unload(GameCtx *ctx, AvenGL *gl) {
     ctx->text = (GameText){ 0 };
 }
 
-GameCtx game_init(AvenGL *gl, AvenArena *arena) {
+GameCtx game_init(AvenGl *gl, AvenArena *arena) {
     GameCtx ctx = { 0 };
 
     ctx.init_arena = aven_arena_init(
-        aven_arena_alloc(arena, GAME_ARENA_SIZE, AVEN_ARENA_BIGGEST_ALIGNMENT),
+        aven_arena_alloc(
+            arena,
+            GAME_ARENA_SIZE,
+            AVEN_ARENA_BIGGEST_ALIGNMENT,
+            1
+        ),
         GAME_ARENA_SIZE
     );
 
@@ -92,13 +97,13 @@ GameCtx game_init(AvenGL *gl, AvenArena *arena) {
     return ctx;
 }
 
-void game_deinit(GameCtx *ctx, AvenGL *gl) {
+void game_deinit(GameCtx *ctx, AvenGl *gl) {
     aven_gl_text_font_deinit(gl, &ctx->text.font);
     game_unload(ctx, gl);
     *ctx = (GameCtx){ 0 };
 }
 
-int game_reload(GameCtx *ctx, AvenGL *gl) {
+int game_reload(GameCtx *ctx, AvenGl *gl) {
     game_unload(ctx, gl);
     game_load(ctx, gl);
 
@@ -107,7 +112,7 @@ int game_reload(GameCtx *ctx, AvenGL *gl) {
 
 int game_update(
     GameCtx *ctx,
-    AvenGL *gl,
+    AvenGl *gl,
     int width,
     int height
 ) {
@@ -120,9 +125,11 @@ int game_update(
     ctx->angle += ROTATION_VELOCITY * elapsed_sec;
 
     float ratio = (float)width / (float)height;
-    float pixel_size = 4.0f / (float)height;
+    float pixel_size = 2.0f / (float)height;
 
     gl->Viewport(0, 0, width, height);
+    assert(gl->GetError() == 0);
+    gl->ClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     assert(gl->GetError() == 0);
     gl->Clear(GL_COLOR_BUFFER_BIT);
     assert(gl->GetError() == 0);
@@ -155,7 +162,16 @@ int game_update(
         (Vec2){ 0.5f, 0.5f },
         0.25f,
         ctx->angle,
-        0.25f,
+        0.5f,
+        (Vec4){ 0.15f, 0.45f, 0.75f, 1.0f }
+    );
+
+    aven_gl_shape_geometry_push_triangle_isoceles(
+        &ctx->shapes.geometry,
+        (Vec2){ -0.5f, 0.5f },
+        (Vec2){ 0.25f, 0.35f },
+        ctx->angle,
+        0.75f,
         (Vec4){ 0.15f, 0.45f, 0.75f, 1.0f }
     );
 

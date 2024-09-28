@@ -159,8 +159,9 @@ AVEN_FN AvenProcIdResult aven_proc_cmd(
     if (cmd_pid == 0) {
         char **args = aven_arena_alloc(
             &arena,
-            (cmd.len + 1) * sizeof(*args),
-            16
+            cmd.len + 1,
+            16,
+            sizeof(*args)
         );
 
         for (size_t i = 0; i < cmd.len; i += 1) {

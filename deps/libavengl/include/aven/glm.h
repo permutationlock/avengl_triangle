@@ -47,6 +47,15 @@ static inline void vec2_copy(Vec2 dst, Vec2 a) {
 #endif // AVEN_GLM_SIMD
 }
 
+static inline float vec2_dot(Vec2 a, Vec2 b) {
+#ifdef AVEN_GLM_SIMD
+    Vec2SIMD ab = *(Vec2SIMD *)a * *(Vec2SIMD *)b;
+    return ab[0] + ab[1];
+#else
+    return a[0] * b[0] + a[1] * b[1];
+#endif // AVEN_GLM_SIMD
+}
+
 static inline void vec2_add(Vec2 dst, Vec2 a, Vec2 b) {
 #ifdef AVEN_GLM_SIMD
     *(Vec2SIMD *)dst = *(Vec2SIMD *)a + *(Vec2SIMD *)b;
@@ -152,6 +161,16 @@ static inline void vec3_copy(Vec3 dst, Vec3 a) {
     dst[2] = a[2];
 }
 
+static inline float vec3_dot(Vec3 a, Vec3 b) {
+    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+}
+
+static inline void vec3_scale(Vec3 dst, float s, Vec3 a) {
+    dst[0] = a[0] * s;
+    dst[1] = a[1] * s;
+    dst[2] = a[2] * s;
+}
+
 static inline void vec3_add(Vec3 dst, Vec3 a, Vec3 b) {
     dst[0] = a[0] + b[0];
     dst[1] = a[1] + b[1];
@@ -208,6 +227,26 @@ static inline void vec4_copy(Vec4 dst, Vec4 a) {
     dst[1] = a[1];
     dst[2] = a[2];
     dst[3] = a[3];
+#endif // AVEN_GLM_SIMD
+}
+
+static inline float vec4_dot(Vec4 a, Vec4 b) {
+#ifdef AVEN_GLM_SIMD
+    Vec4SIMD ab = *(Vec4SIMD *)a * *(Vec4SIMD *)b;
+    return ab[0] + ab[1] + ab[2] + ab[3];
+#else
+    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
+#endif // AVEN_GLM_SIMD
+}
+
+static inline void vec4_scale(Vec4 dst, float s, Vec4 a) {
+#ifdef AVEN_GLM_SIMD
+    *(Vec4SIMD *)dst = *(Vec4SIMD *)a * s;
+#else
+    dst[0] = a[0] * s;
+    dst[1] = a[1] * s;
+    dst[2] = a[2] * s;
+    dst[3] = a[3] * s;
 #endif // AVEN_GLM_SIMD
 }
 

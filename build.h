@@ -7,12 +7,6 @@ static inline AvenArgSlice avengl_triangle_build_args(AvenArena *arena) {
             .name = "-no-glfw",
             .description = "Don't build GLFW locally",
             .type = AVEN_ARG_TYPE_BOOL,
-#if defined(BUILD_DEFAULT_NOGLFW)
-            .value = {
-                .type = AVEN_ARG_TYPE_BOOL,
-                .data = { .arg_bool = BUILD_DEFAULT_NOGLFW },
-            },
-#endif
         },
         {
             .name = "-syslibs",
@@ -56,17 +50,17 @@ static inline AvenArgSlice avengl_triangle_build_args(AvenArena *arena) {
 }
 
 typedef struct {
-    LibAvenGLBuildOpts libavengl;
+    LibAvenGlBuildOpts libavengl;
     AvenStrSlice syslibs;
     bool no_glfw;
     bool winutf8;
-} AvenGLTriangleBuildOpts;
+} AvenGlTriangleBuildOpts;
 
-static inline AvenGLTriangleBuildOpts avengl_triangle_build_opts(
+static inline AvenGlTriangleBuildOpts avengl_triangle_build_opts(
     AvenArgSlice args,
     AvenArena *arena
 ) {
-    AvenGLTriangleBuildOpts opts = { 0 };
+    AvenGlTriangleBuildOpts opts = { 0 };
     opts.libavengl = libavengl_build_opts(args, arena);
     opts.syslibs = aven_str_split(
         aven_str_cstr(aven_arg_get_str(args, "-syslibs")),
@@ -98,7 +92,7 @@ static inline AvenStr avengl_triangle_build_src_game_path(
 
 static inline AvenBuildStep avengl_triangle_build_step_hot_dll(
     AvenBuildCommonOpts *opts,
-    AvenGLTriangleBuildOpts *triangle_opts,
+    AvenGlTriangleBuildOpts *triangle_opts,
     AvenStr libaven_path,
     AvenStr root_path,
     AvenBuildStep *work_dir_step,
@@ -170,7 +164,7 @@ static inline AvenBuildStep avengl_triangle_build_step_hot_dll(
 
 static inline AvenBuildStep avengl_triangle_build_step_hot_exe(
     AvenBuildCommonOpts *opts,
-    AvenGLTriangleBuildOpts *triangle_opts,
+    AvenGlTriangleBuildOpts *triangle_opts,
     AvenStr libaven_path,
     AvenStr root_path,
     AvenBuildStep *work_dir_step,
@@ -270,7 +264,7 @@ static inline AvenBuildStep avengl_triangle_build_step_hot_exe(
 
 static inline AvenBuildStep avengl_triangle_build_step_exe(
     AvenBuildCommonOpts *opts,
-    AvenGLTriangleBuildOpts *triangle_opts,
+    AvenGlTriangleBuildOpts *triangle_opts,
     AvenStr libaven_path,
     AvenStr root_path,
     AvenBuildStep *work_dir_step,

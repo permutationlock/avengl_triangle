@@ -10,12 +10,12 @@
 typedef struct {
     Vec4 color;
     Vec4 pos;
-} AvenGLShapeVertex;
+} AvenGlShapeVertex;
 
 typedef struct {
-    List(AvenGLShapeVertex) vertices;
+    List(AvenGlShapeVertex) vertices;
     List(GLushort) indices;
-} AvenGLShapeGeometry;
+} AvenGlShapeGeometry;
 
 typedef struct {
     GLuint vertex_shader;
@@ -25,7 +25,7 @@ typedef struct {
     GLuint upos_location;
     GLuint vpos_location;
     GLuint vcolor_location;
-} AvenGLShapeCtx;
+} AvenGlShapeCtx;
 
 typedef struct {
     size_t vertex_cap;
@@ -33,22 +33,22 @@ typedef struct {
     size_t index_len;
     GLuint vertex;
     GLuint index;
-    AvenGLBufferUsage usage;
-} AvenGLShapeBuffer;
+    AvenGlBufferUsage usage;
+} AvenGlShapeBuffer;
 
-static inline AvenGLShapeGeometry aven_gl_shape_geometry_init(
+static inline AvenGlShapeGeometry aven_gl_shape_geometry_init(
     size_t max_vertices,
     size_t max_indices,
     AvenArena *arena
 ) {
     assert(max_indices >= max_vertices);
 
-    AvenGLShapeGeometry geometry = {
+    AvenGlShapeGeometry geometry = {
         .vertices = { .cap = max_vertices },
         .indices = { .cap = max_indices },
     };
     geometry.vertices.ptr = aven_arena_create_array(
-        AvenGLShapeVertex,
+        AvenGlShapeVertex,
         arena,
         geometry.vertices.cap
     );
@@ -61,19 +61,19 @@ static inline AvenGLShapeGeometry aven_gl_shape_geometry_init(
     return geometry;
 }
 
-static inline void aven_gl_shape_geometry_clear(AvenGLShapeGeometry *geometry) {
+static inline void aven_gl_shape_geometry_clear(AvenGlShapeGeometry *geometry) {
     geometry->vertices.len = 0;
     geometry->indices.len = 0;
 }
 
 static inline void aven_gl_shape_geometry_deinit(
-    AvenGLShapeGeometry *geometry
+    AvenGlShapeGeometry *geometry
 ) {
-    *geometry = (AvenGLShapeGeometry){ 0 };
+    *geometry = (AvenGlShapeGeometry){ 0 };
 }
 
-static inline AvenGLShapeCtx aven_gl_shape_ctx_init(AvenGL *gl) {
-    AvenGLShapeCtx ctx = { 0 };
+static inline AvenGlShapeCtx aven_gl_shape_ctx_init(AvenGl *gl) {
+    AvenGlShapeCtx ctx = { 0 };
 
     static const char* vertex_shader_text =
         "#version 100\n"
@@ -161,19 +161,19 @@ static inline AvenGLShapeCtx aven_gl_shape_ctx_init(AvenGL *gl) {
     return ctx;
 }
 
-static inline void aven_gl_shape_ctx_deinit(AvenGL *gl, AvenGLShapeCtx *ctx) {
+static inline void aven_gl_shape_ctx_deinit(AvenGl *gl, AvenGlShapeCtx *ctx) {
     gl->DeleteProgram(ctx->program);
     gl->DeleteShader(ctx->fragment_shader);
     gl->DeleteShader(ctx->vertex_shader);
-    *ctx = (AvenGLShapeCtx){ 0 };
+    *ctx = (AvenGlShapeCtx){ 0 };
 }
 
-static inline AvenGLShapeBuffer aven_gl_shape_buffer_init(
-    AvenGL *gl,
-    AvenGLShapeGeometry *geometry,
-    AvenGLBufferUsage buffer_usage
+static inline AvenGlShapeBuffer aven_gl_shape_buffer_init(
+    AvenGl *gl,
+    AvenGlShapeGeometry *geometry,
+    AvenGlBufferUsage buffer_usage
 ) {
-    AvenGLShapeBuffer buffer = { .usage = buffer_usage };
+    AvenGlShapeBuffer buffer = { .usage = buffer_usage };
 
     switch (buffer_usage) {
         case AVEN_GL_BUFFER_USAGE_DYNAMIC:
@@ -227,18 +227,18 @@ static inline AvenGLShapeBuffer aven_gl_shape_buffer_init(
 }
 
 static inline void aven_gl_shape_buffer_deinit(
-    AvenGL *gl,
-    AvenGLShapeBuffer *buffer
+    AvenGl *gl,
+    AvenGlShapeBuffer *buffer
 ) {
     gl->DeleteBuffers(1, &buffer->index);
     gl->DeleteBuffers(1, &buffer->vertex);
-    *buffer = (AvenGLShapeBuffer){ 0 };
+    *buffer = (AvenGlShapeBuffer){ 0 };
 }
 
 static inline void aven_gl_shape_buffer_update(
-    AvenGL *gl,
-    AvenGLShapeBuffer *buffer,
-    AvenGLShapeGeometry *geometry
+    AvenGl *gl,
+    AvenGlShapeBuffer *buffer,
+    AvenGlShapeGeometry *geometry
 ) {
     assert(buffer->usage == AVEN_GL_BUFFER_USAGE_DYNAMIC);
     assert(geometry->vertices.len < buffer->vertex_cap);
@@ -273,9 +273,9 @@ static inline void aven_gl_shape_buffer_update(
 }
 
 static inline void aven_gl_shape_draw(
-    AvenGL *gl,
-    AvenGLShapeCtx *ctx,
-    AvenGLShapeBuffer *buffer,
+    AvenGl *gl,
+    AvenGlShapeCtx *ctx,
+    AvenGlShapeBuffer *buffer,
     Mat2 cam_trans,
     Vec2 cam_pos
 ) {
@@ -296,8 +296,8 @@ static inline void aven_gl_shape_draw(
         4,
         GL_FLOAT,
         GL_FALSE,
-        sizeof(AvenGLShapeVertex),
-        (void*)offsetof(AvenGLShapeVertex, pos)
+        sizeof(AvenGlShapeVertex),
+        (void*)offsetof(AvenGlShapeVertex, pos)
     );
     assert(gl->GetError() == 0);
     gl->VertexAttribPointer(
@@ -305,8 +305,8 @@ static inline void aven_gl_shape_draw(
         4,
         GL_FLOAT,
         GL_FALSE,
-        sizeof(AvenGLShapeVertex),
-        (void*)offsetof(AvenGLShapeVertex, color)
+        sizeof(AvenGlShapeVertex),
+        (void*)offsetof(AvenGlShapeVertex, color)
     );
     assert(gl->GetError() == 0);
     gl->Enable(GL_BLEND);
@@ -350,7 +350,7 @@ static inline void aven_gl_shape_draw(
 }
 
 static void aven_gl_shape_geometry_push_triangle(
-    AvenGLShapeGeometry *geometry,
+    AvenGlShapeGeometry *geometry,
     Vec4 p1,
     Vec4 p2,
     Vec4 p3,
@@ -358,15 +358,15 @@ static void aven_gl_shape_geometry_push_triangle(
 ) {
     size_t start_index = geometry->vertices.len;
 
-    list_push(geometry->vertices) = (AvenGLShapeVertex){
+    list_push(geometry->vertices) = (AvenGlShapeVertex){
         .pos = { p1[0], p1[1], p1[2], p1[3] },
         .color = { color[0], color[1], color[2], color[3] },
     };
-    list_push(geometry->vertices) = (AvenGLShapeVertex){
+    list_push(geometry->vertices) = (AvenGlShapeVertex){
         .pos = { p2[0], p2[1], p2[2], p2[3] },
         .color = { color[0], color[1], color[2], color[3] },
     };
-    list_push(geometry->vertices) = (AvenGLShapeVertex){
+    list_push(geometry->vertices) = (AvenGlShapeVertex){
         .pos = { p3[0], p3[1], p3[2], p3[3] },
         .color = { color[0], color[1], color[2], color[3] },
     };
@@ -377,7 +377,7 @@ static void aven_gl_shape_geometry_push_triangle(
 }
 
 static void aven_gl_shape_geometry_push_quad(
-    AvenGLShapeGeometry *geometry,
+    AvenGlShapeGeometry *geometry,
     Vec4 p1,
     Vec4 p2,
     Vec4 p3,
@@ -386,19 +386,19 @@ static void aven_gl_shape_geometry_push_quad(
 ) {
     size_t start_index = geometry->vertices.len;
 
-    list_push(geometry->vertices) = (AvenGLShapeVertex){
+    list_push(geometry->vertices) = (AvenGlShapeVertex){
         .pos = { p1[0], p1[1], p1[2], p1[3] },
         .color = { color[0], color[1], color[2], color[3] },
     };
-    list_push(geometry->vertices) = (AvenGLShapeVertex){
+    list_push(geometry->vertices) = (AvenGlShapeVertex){
         .pos = { p2[0], p2[1], p2[2], p2[3] },
         .color = { color[0], color[1], color[2], color[3] },
     };
-    list_push(geometry->vertices) = (AvenGLShapeVertex){
+    list_push(geometry->vertices) = (AvenGlShapeVertex){
         .pos = { p3[0], p3[1], p3[2], p3[3] },
         .color = { color[0], color[1], color[2], color[3] },
     };
-    list_push(geometry->vertices) = (AvenGLShapeVertex){
+    list_push(geometry->vertices) = (AvenGlShapeVertex){
         .pos = { p4[0], p4[1], p4[2], p4[3] },
         .color = { color[0], color[1], color[2], color[3] },
     };
@@ -412,7 +412,7 @@ static void aven_gl_shape_geometry_push_quad(
 }
 
 static inline void aven_gl_shape_geometry_push_triangle_isoceles(
-    AvenGLShapeGeometry *geometry,
+    AvenGlShapeGeometry *geometry,
     Vec2 pos,
     Vec2 dim,
     float rotation_angle,
@@ -449,7 +449,7 @@ static inline void aven_gl_shape_geometry_push_triangle_isoceles(
 }
 
 static inline void aven_gl_shape_geometry_push_triangle_equilateral(
-    AvenGLShapeGeometry *geometry,
+    AvenGlShapeGeometry *geometry,
     Vec2 pos,
     float height,
     float rotation_angle,
@@ -467,7 +467,7 @@ static inline void aven_gl_shape_geometry_push_triangle_equilateral(
 }
 
 static inline void aven_gl_shape_geometry_push_rectangle(
-    AvenGLShapeGeometry *geometry,
+    AvenGlShapeGeometry *geometry,
     Vec2 pos,
     Vec2 dim,
     float rotation_angle,
@@ -503,6 +503,43 @@ static inline void aven_gl_shape_geometry_push_rectangle(
         (Vec4){ p2[0], p2[1],  1.0f * rs, -1.0f * rs },
         (Vec4){ p3[0], p3[1],  1.0f * rs,  1.0f * rs },
         (Vec4){ p4[0], p4[1], -1.0f * rs,  1.0f * rs },
+        color
+    );
+}
+
+static inline void aven_gl_shape_geometry_push_line(
+    AvenGlShapeGeometry *geometry,
+    Vec2 p1,
+    Vec2 p2,
+    float thickness,
+    float roundness,
+    Vec4 color
+) {
+    // Below is not efficient, but it is simple given that rectangle is
+    // already implemented. If drawing lots of lines each frame, consider
+    // doing something different.
+
+    Vec2 center;
+    vec2_add(center, p2, p1);
+    vec2_scale(center, 0.5f);
+
+    Vec2 diff;
+    vec2_diff(diff, p2, p1);
+    float dist = sqrtf(vec2_dot(diff, diff));
+    vec2_scale(diff, 1.0f / dist, diff);
+
+    Vec2 dim = { (dist / 2.0f) + thickness, thickness };
+    float angle = acosf(vec2_dot(diff, (Vec2){ 1.0f, 0.0f }));
+    if (diff[1] < 0.0f) {
+        angle = 2.0f * AVEN_GLM_PI_F - angle;
+    }
+
+    aven_gl_shape_geometry_push_rectangle(
+        geometry,
+        center,
+        dim,
+        angle,
+        roundness,
         color
     );
 }

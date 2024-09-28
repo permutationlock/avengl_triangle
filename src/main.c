@@ -90,7 +90,7 @@ static void key_callback(
 }
 
 static GLFWwindow *window;
-static AvenGL gl;
+static AvenGl gl;
 static GameCtx ctx;
 static GameInfo game_info;
 
@@ -146,7 +146,7 @@ int main(void) {
     window = glfwCreateWindow(
         (int)width,
         (int)height,
-        "AvenGL Test",
+        "AvenGl Test",
         NULL,
         NULL
     );
@@ -155,7 +155,7 @@ int main(void) {
         window = glfwCreateWindow(
             (int)width,
             (int)height,
-            "AvenGL Test",
+            "AvenGl Test",
             NULL,
             NULL
         );

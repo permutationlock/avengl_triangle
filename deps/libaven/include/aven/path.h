@@ -89,7 +89,7 @@ AVEN_FN AvenStr aven_path_fname(AvenStr path, AvenArena *arena) {
         return aven_str("");
     }
     AvenStr fname = { .len = path.len - i };
-    fname.ptr = aven_arena_alloc(arena, fname.len + 1, 1);
+    fname.ptr = aven_arena_alloc(arena, fname.len + 1, 1, 1);
 
     path.ptr += i;
     path.len -= i;
@@ -113,7 +113,7 @@ AVEN_FN AvenStr aven_path_rel_dir(AvenStr path, AvenArena *arena) {
         return path;
     }
     AvenStr dir = { .len = i - 1 };
-    dir.ptr = aven_arena_alloc(arena, dir.len + 1, 1),
+    dir.ptr = aven_arena_alloc(arena, dir.len + 1, 1, 1),
 
     path.len = i - 1;
     slice_copy(dir, path);
@@ -268,7 +268,7 @@ AVEN_FN AvenPathResult aven_path_exe(AvenArena *arena) {
     }
  
     AvenStr path = { .len = len + 1 };
-    path.ptr = aven_arena_alloc(arena, path.len, 1);
+    path.ptr = aven_arena_alloc(arena, path.len, 1, 1);
 
     memcpy(path.ptr, buffer, path.len - 1);
     slice_get(path, path.len - 1) = 0;
@@ -282,7 +282,7 @@ AVEN_FN AvenPathResult aven_path_exe(AvenArena *arena) {
     }
 
     AvenStr path = { .len = (size_t)len + 1 };
-    path.ptr = aven_arena_alloc(arena, path.len, 1);
+    path.ptr = aven_arena_alloc(arena, path.len, 1, 1);
 
     memcpy(path.ptr, buffer, path.len - 1);
     slice_get(path, path.len - 1) = 0;
