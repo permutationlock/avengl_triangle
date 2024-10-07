@@ -89,10 +89,12 @@ static void key_callback(
     }
 }
 
+// App data (made global for Emscripten)
 static GLFWwindow *window;
 static AvenGl gl;
 static GameCtx ctx;
 static GameInfo game_info;
+static AvenArena arena;
 
 #if defined(__EMSCRIPTEN__)
     #include <emscripten.h>
@@ -106,7 +108,7 @@ static GameInfo game_info;
         int height;
         glfwGetFramebufferSize(window, &width, &height);
 
-        game_info.vtable.update(&ctx, &gl, width, height);
+        game_info.vtable.update(&ctx, &gl, width, height, arena);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -122,12 +124,12 @@ int main(void) {
 #endif // !defined(_MSC_VER)
     aven_fs_utf8_mode();
 
-    // could probably switch to raw page allocation, but malloc is simple and
-    // we are dynamically linking the system libc anyway
+    // could probably switch to raw page allocation, but malloc is cross
+    // platform and we are dynamically linking the system libc anyway
     void *mem = malloc(ARENA_SIZE);
     assert(mem != NULL);
 
-    AvenArena arena = aven_arena_init(mem, ARENA_SIZE);
+    arena = aven_arena_init(mem, ARENA_SIZE);
 
     int width = 480;
     int height = 480;
@@ -246,7 +248,7 @@ int main(void) {
 #endif // defined(HOT_RELOAD)
         glfwGetFramebufferSize(window, &width, &height);
 
-        game_info.vtable.update(&ctx, &gl, width, height);
+        game_info.vtable.update(&ctx, &gl, width, height, arena);
 
         glfwSwapBuffers(window);
         glfwPollEvents();

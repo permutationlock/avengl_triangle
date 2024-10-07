@@ -35,11 +35,17 @@ typedef struct {
 GameCtx game_init(AvenGl *gl, AvenArena *arena);
 void game_deinit(GameCtx *ctx, AvenGl *gl);
 int game_reload(GameCtx *ctx, AvenGl *gl);
-int game_update(GameCtx *ctx, AvenGl *gl, int width, int height);
+int game_update(GameCtx *ctx, AvenGl *gl, int width, int height, AvenArena arena);
  
 typedef GameCtx (*GameInitFn)(AvenGl *gl, AvenArena *arena);
 typedef int (*GameReloadFn)(GameCtx *ctx, AvenGl *gl);
-typedef int (*GameUpdateFn)(GameCtx *ctx, AvenGl *gl, int width, int height);
+typedef int (*GameUpdateFn)(
+    GameCtx *ctx,
+    AvenGl *gl,
+    int width,
+    int height,
+    AvenArena arena
+);
 typedef void (*GameDeinitFn)(GameCtx *ctx, AvenGl *gl);
 
 typedef struct {

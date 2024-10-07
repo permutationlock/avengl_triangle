@@ -85,7 +85,7 @@ static inline AvenGlShapeCtx aven_gl_shape_ctx_init(AvenGl *gl) {
         "varying vec2 fPos;\n"
         "varying vec4 fColor;\n"
         "void main() {\n"
-        "    gl_Position = vec4(uTrans * (vPos.xy - uPos), 0.0, 1.0);\n"
+        "    gl_Position = vec4((uTrans * vPos.xy) + uPos, 0.0, 1.0);\n"
         "    fPos = vPos.zw;\n"
         "    fColor = vColor;\n"
         "}\n";
@@ -276,8 +276,7 @@ static inline void aven_gl_shape_draw(
     AvenGl *gl,
     AvenGlShapeCtx *ctx,
     AvenGlShapeBuffer *buffer,
-    Mat2 cam_trans,
-    Vec2 cam_pos
+    Aff2 cam_trans
 ) {
     gl->BindBuffer(GL_ARRAY_BUFFER, buffer->vertex);
     assert(gl->GetError() == 0);
@@ -324,7 +323,7 @@ static inline void aven_gl_shape_draw(
     gl->Uniform2fv(
         (GLint)ctx->upos_location,
         1,
-        (GLfloat*)cam_pos
+        (GLfloat*)cam_trans[2]
     );
     assert(gl->GetError() == 0);
 
@@ -349,7 +348,7 @@ static inline void aven_gl_shape_draw(
     assert(gl->GetError() == 0);
 }
 
-static void aven_gl_shape_geometry_push_triangle(
+static void aven_gl_shape_geometry_push_triangle_raw(
     AvenGlShapeGeometry *geometry,
     Vec4 p1,
     Vec4 p2,
@@ -376,7 +375,7 @@ static void aven_gl_shape_geometry_push_triangle(
     list_push(geometry->indices) = (GLushort)start_index + 2;
 }
 
-static void aven_gl_shape_geometry_push_quad(
+static void aven_gl_shape_geometry_push_quad_raw(
     AvenGlShapeGeometry *geometry,
     Vec4 p1,
     Vec4 p2,
@@ -411,35 +410,25 @@ static void aven_gl_shape_geometry_push_quad(
     list_push(geometry->indices) = (GLushort)start_index + 3;
 }
 
-static inline void aven_gl_shape_geometry_push_triangle_isoceles(
+
+static inline void aven_gl_shape_geometry_push_triangle(
     AvenGlShapeGeometry *geometry,
-    Vec2 pos,
-    Vec2 dim,
-    float rotation_angle,
+    Aff2 trans,
+    Vec2 p1,
+    Vec2 p2,
+    Vec2 p3,
     float roundness,
     Vec4 color
 ) {
-    Vec2 p1 = {           0.0f, 2.0f * dim[1] / 3.0f };
-    Vec2 p2 = { -dim[0] / 2.0f,       -dim[1] / 3.0f };
-    Vec2 p3 = {  dim[0] / 2.0f,       -dim[1] / 3.0f };
+    aff2_transform(p1, trans, p1);
+    aff2_transform(p2, trans, p2);
+    aff2_transform(p3, trans, p3);
 
-    Mat2 id;
-    mat2_identity(id);
-    Mat2 rot;
-    mat2_rotate(rot, id, rotation_angle);
-
-    mat2_mul_vec2(p1, rot, p1);
-    mat2_mul_vec2(p2, rot, p2);
-    mat2_mul_vec2(p3, rot, p3);
-
-    vec2_add(p1, pos, p1);
-    vec2_add(p2, pos, p2);
-    vec2_add(p3, pos, p3);
-
+    // Roundness calculation done for equilateral triangle
     float rs = 1.0f + roundness;
     float sx = AVEN_GLM_SQRT3_F / 2.0f;
 
-    aven_gl_shape_geometry_push_triangle(
+    aven_gl_shape_geometry_push_triangle_raw(
         geometry,
         (Vec4){ p1[0], p1[1],     0.0f,  rs * 1.0f },
         (Vec4){ p2[0], p2[1], rs * -sx, rs * -0.5f },
@@ -448,56 +437,89 @@ static inline void aven_gl_shape_geometry_push_triangle_isoceles(
     );
 }
 
-static inline void aven_gl_shape_geometry_push_triangle_equilateral(
+static inline void aven_gl_shape_geometry_push_triangle_isoceles(
     AvenGlShapeGeometry *geometry,
-    Vec2 pos,
-    float height,
-    float rotation_angle,
+    Aff2 trans,
     float roundness,
     Vec4 color
 ) {
-    aven_gl_shape_geometry_push_triangle_isoceles(
+    Vec2 p1 = {  0.0f,  1.0f };
+    Vec2 p2 = {  1.0f, -1.0f };
+    Vec2 p3 = { -1.0f, -1.0f };
+
+    aven_gl_shape_geometry_push_triangle(
         geometry,
-        pos,
-        (Vec2){ (2.0f / AVEN_GLM_SQRT3_F) * height, height },
-        rotation_angle,
+        trans,
+        p1,
+        p2,
+        p3,
         roundness,
         color
     );
 }
 
-static inline void aven_gl_shape_geometry_push_rectangle(
+static inline void aven_gl_shape_geometry_push_triangle_right(
     AvenGlShapeGeometry *geometry,
-    Vec2 pos,
-    Vec2 dim,
-    float rotation_angle,
+    Aff2 trans,
     float roundness,
     Vec4 color
 ) {
-    Vec2 p1 = { -dim[0] / 2.0f, -dim[1] / 2.0f };
-    Vec2 p2 = {  dim[0] / 2.0f, -dim[1] / 2.0f };
-    Vec2 p3 = {  dim[0] / 2.0f,  dim[1] / 2.0f };
-    Vec2 p4 = { -dim[0] / 2.0f,  dim[1] / 2.0f };
+    Vec2 p1 = { -1.0f,  1.0f };
+    Vec2 p2 = {  1.0f, -1.0f };
+    Vec2 p3 = { -1.0f, -1.0f };
 
-    Mat2 id;
-    mat2_identity(id);
-    Mat2 rot;
-    mat2_rotate(rot, id, rotation_angle);
+    aven_gl_shape_geometry_push_triangle(
+        geometry,
+        trans,
+        p1,
+        p2,
+        p3,
+        roundness,
+        color
+    );
+}
 
-    mat2_mul_vec2(p1, rot, p1);
-    mat2_mul_vec2(p2, rot, p2);
-    mat2_mul_vec2(p3, rot, p3);
-    mat2_mul_vec2(p4, rot, p4);
+// static inline void aven_gl_shape_geometry_push_triangle_isoceles(
+//     AvenGlShapeGeometry *geometry,
+//     Aff2 trans,
+//     Vec2 center,
+//     Vec2 dim,
+//     float rotation,
+//     float roundness,
+//     Vec4 color
+// ) {
+//     Aff2 tri_trans;
+//     aff2_position_unit(tri_trans, center, dim, rotation);
+//     aff2_compose(tri_trans, trans, tri_trans);
 
-    vec2_add(p1, pos, p1);
-    vec2_add(p2, pos, p2);
-    vec2_add(p3, pos, p3);
-    vec2_add(p4, pos, p4);
+//     aven_gl_shape_geometry_push_unit_triangle_isoceles(
+//         geometry,
+//         tri_trans, 
+//         roundness, 
+//         color
+//     );
+// }
+ 
+static inline void aven_gl_shape_geometry_push_square(
+    AvenGlShapeGeometry *geometry,
+    Aff2 trans,
+    float roundness,
+    Vec4 color
+) {
+    Vec2 p1 = { -1.0f, -1.0f };
+    Vec2 p2 = {  1.0f, -1.0f };
+    Vec2 p3 = {  1.0f,  1.0f };
+    Vec2 p4 = { -1.0f,  1.0f };
+
+    aff2_transform(p1, trans, p1);
+    aff2_transform(p2, trans, p2);
+    aff2_transform(p3, trans, p3);
+    aff2_transform(p4, trans, p4);
 
     float rs = (1.0f / AVEN_GLM_SQRT2_F) +
         roundness * (1.0f - (1.0f / AVEN_GLM_SQRT2_F));
 
-    aven_gl_shape_geometry_push_quad(
+    aven_gl_shape_geometry_push_quad_raw(
         geometry,
         (Vec4){ p1[0], p1[1], -1.0f * rs, -1.0f * rs },
         (Vec4){ p2[0], p2[1],  1.0f * rs, -1.0f * rs },
@@ -507,41 +529,58 @@ static inline void aven_gl_shape_geometry_push_rectangle(
     );
 }
 
-static inline void aven_gl_shape_geometry_push_line(
-    AvenGlShapeGeometry *geometry,
-    Vec2 p1,
-    Vec2 p2,
-    float thickness,
-    float roundness,
-    Vec4 color
-) {
-    // Below is not efficient, but it is simple given that rectangle is
-    // already implemented. If drawing lots of lines each frame, consider
-    // doing something different.
+// static inline void aven_gl_shape_geometry_push_rectangle(
+//     AvenGlShapeGeometry *geometry,
+//     Aff2 trans,
+//     Vec2 center,
+//     Vec2 dim,
+//     float rotation,
+//     float roundness,
+//     Vec4 color
+// ) {
+//     Aff2 rec_trans;
+//     aff2_position_unit(rec_trans, center, dim, rotation);
+//     aff2_compose(rec_trans, trans, rec_trans);
 
-    Vec2 center;
-    vec2_add(center, p2, p1);
-    vec2_scale(center, 0.5f);
+//     aven_gl_shape_geometry_push_unit_square(
+//         geometry,
+//         rec_trans, 
+//         roundness, 
+//         color
+//     );
+// }
+ 
+// static inline void aven_gl_shape_geometry_push_line(
+//     AvenGlShapeGeometry *geometry,
+//     Aff2 trans,
+//     Vec2 p1,
+//     Vec2 p2,
+//     float thickness,
+//     Vec4 color
+// ) {
+//     Vec2 center;
+//     vec2_midpoint(center, p1, p2);
 
-    Vec2 diff;
-    vec2_diff(diff, p2, p1);
-    float dist = sqrtf(vec2_dot(diff, diff));
-    vec2_scale(diff, 1.0f / dist, diff);
+//     Vec2 p1p2;
+//     vec2_diff(p1p2, p2, p1);
 
-    Vec2 dim = { (dist / 2.0f) + thickness, thickness };
-    float angle = acosf(vec2_dot(diff, (Vec2){ 1.0f, 0.0f }));
-    if (diff[1] < 0.0f) {
-        angle = 2.0f * AVEN_GLM_PI_F - angle;
-    }
+//     float dist = vec2_mag(p1p2);
 
-    aven_gl_shape_geometry_push_rectangle(
-        geometry,
-        center,
-        dim,
-        angle,
-        roundness,
-        color
-    );
-}
+//     Aff2 line_trans;
+//     aff2_position_unit(
+//         line_trans,
+//         center,
+//         (Vec2){ dist + 2.0f * thickness, 2.0f * thickness },
+//         vec2_angle_xaxis(p1p2)
+//     );
+//     aff2_compose(line_trans, trans, line_trans);
+    
+//     aven_gl_shape_geometry_push_unit_square(
+//         geometry,
+//         line_trans,
+//         0.0f,
+//         color
+//     );
+// }
 
 #endif // AVEN_GL_SHAPE_H

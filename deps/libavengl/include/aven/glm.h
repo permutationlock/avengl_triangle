@@ -28,10 +28,12 @@
     typedef float Vec2[2] __attribute__((aligned(8)));
     typedef float Vec4[4] __attribute__((aligned(16)));
     typedef Vec2 Mat2[2] __attribute__((aligned(16)));
+    typedef Vec2 Aff2[4] __attribute__((aligned(16)));
 #else
     typedef float Vec2[2];
     typedef float Vec4[4];
     typedef Vec2 Mat2[2];
+    typedef Vec2 Aff2[3];
 #endif
 
 typedef float Vec3[3];
@@ -47,12 +49,14 @@ static inline void vec2_copy(Vec2 dst, Vec2 a) {
 #endif // AVEN_GLM_SIMD
 }
 
-static inline float vec2_dot(Vec2 a, Vec2 b) {
+static inline void vec2_scale(Vec2 dst, float s, Vec2 a) {
 #ifdef AVEN_GLM_SIMD
-    Vec2SIMD ab = *(Vec2SIMD *)a * *(Vec2SIMD *)b;
-    return ab[0] + ab[1];
+    *(Vec2SIMD *)dst = *(Vec2SIMD *)a * s;
 #else
-    return a[0] * b[0] + a[1] * b[1];
+    dst[0] = a[0] * s;
+    dst[1] = a[1] * s;
+    dst[2] = a[2] * s;
+    dst[3] = a[3] * s;
 #endif // AVEN_GLM_SIMD
 }
 
@@ -72,6 +76,54 @@ static inline void vec2_diff(Vec2 dst, Vec2 a, Vec2 b) {
     dst[0] = a[0] - b[0];
     dst[1] = a[1] - b[1];
 #endif // AVEN_GLM_SIMD
+}
+
+static inline void vec2_mul(Vec2 dst, Vec2 a, Vec2 b) {
+#ifdef AVEN_GLM_SIMD
+    *(Vec2SIMD *)dst = (*(Vec2SIMD *)a) * (*(Vec2SIMD *)b);
+#else
+    dst[0] = a[0] * b[0];
+    dst[1] = a[1] * b[1];
+#endif // AVEN_GLM_SIMD
+}
+
+static inline float vec2_dot(Vec2 a, Vec2 b) {
+    Vec2 ab;
+    vec2_mul(ab, a, b);
+    return ab[0] + ab[1];
+}
+
+static inline float vec2_mag(Vec2 a) {
+    return sqrtf(vec2_dot(a, a));
+}
+
+static inline float vec2_dist(Vec2 a, Vec2 b) {
+    Vec2 ab;
+    vec2_diff(ab, b, a);
+    return vec2_mag(ab);
+}
+
+static inline float vec2_angle(Vec2 a, Vec2 b) {
+    Vec2 an;
+    vec2_scale(an, vec2_mag(a), a);
+
+    Vec2 bn;
+    vec2_scale(bn, vec2_mag(b), b);
+
+    return acosf(vec2_dot(an, bn));
+}
+
+static inline float vec2_angle_xaxis(Vec2 a) {
+    float angle = vec2_angle(a, (Vec2){ 1.0f, 0.0f });
+    if (a[1] < 0.0f) {
+        angle = 2.0f * AVEN_GLM_PI_F - angle;
+    }
+    return angle;
+}
+
+static inline void vec2_midpoint(Vec2 dest, Vec2 a, Vec2 b) {
+    vec2_add(dest, a, b);
+    vec2_scale(dest, 0.5f, dest);
 }
 
 static inline void mat2_copy(Mat2 dst, Mat2 m) {
@@ -141,18 +193,90 @@ static inline void mat2_rotate(Mat2 dst, Mat2 m, float theta) {
     mat2_mul_mat2(dst, m, rot);
 }
 
-static inline void mat2_ortho(
+static inline void mat2_stretch(
     Mat2 dst,
-    float left,
-    float right,
-    float bot,
-    float top
+    Mat2 m,
+    Vec2 dim
 ) {
-    Mat2 m = {
-        { 2.0f / (right - left),               0.0f },
-        {                  0.0f, 2.0f / (top - bot) },
+    Mat2 s = {
+        { dim[0],   0.0f },
+        {   0.0f, dim[1] },
     };
-    mat2_copy(dst, m);
+    mat2_mul_mat2(dst, s, m);
+}
+
+static inline void aff2_identity(Aff2 t) {
+    mat2_identity(t);
+#ifdef AVEN_GLM_SIMD
+    Vec2 zero = { 0.0f, 0.0f };
+    vec2_copy(t[2], zero);
+#else
+    Mat2 zero = { 0.0f, 0.0f, 0.0f, 0.0f };
+    mat2_copy(t[2], zero);
+#endif
+}
+
+static inline void aff2_add_vec2(Aff2 dest, Aff2 t, Vec2 v) {
+    mat2_copy(dest, t);
+    vec2_add(dest[2], t[2], v);
+}
+
+static inline void aff2_diff_vec2(Aff2 dest, Aff2 t, Vec2 v) {
+    mat2_copy(dest, t);
+    vec2_diff(dest[2], t[2], v);
+}
+
+static inline void mat2_mul_aff2(Aff2 dest, Mat2 m, Aff2 t) {
+    mat2_mul_mat2(dest, m, t);
+    mat2_mul_vec2(dest[2], m, t[2]);
+}
+
+static inline void aff2_compose(Aff2 dest, Aff2 t, Aff2 w) {
+    mat2_mul_aff2(dest, t, w);
+    aff2_add_vec2(dest, dest, t[2]);
+}
+
+static inline void aff2_transform(Vec2 dest, Aff2 t, Vec2 v) {
+    mat2_mul_vec2(dest, t, v);
+    vec2_add(dest, t[2], dest);
+}
+
+static inline void aff2_stretch(Aff2 dest, Aff2 t, Vec2 dim) {
+    Mat2 s;
+    mat2_identity(s);
+    mat2_stretch(s, s, dim);
+    mat2_mul_aff2(dest, s, t);
+}
+
+static inline void aff2_rotate(Aff2 dest, Aff2 t, float theta) {
+    Mat2 r;
+    mat2_identity(r);
+    mat2_rotate(r, r, theta);
+    mat2_mul_aff2(dest, r, t);
+}
+
+static inline void aff2_position(
+    Aff2 dest,
+    Vec2 pos,
+    Vec2 dim,
+    float theta
+) {
+    aff2_identity(dest);
+    aff2_stretch(dest, dest, dim);
+    aff2_rotate(dest, dest, theta);
+    aff2_add_vec2(dest, dest, pos);
+}
+
+static inline void aff2_camera_position(
+    Aff2 dest,
+    Vec2 pos,
+    Vec2 dim,
+    float theta
+) {
+    aff2_identity(dest);
+    aff2_diff_vec2(dest, dest, pos);
+    aff2_rotate(dest, dest, -theta);
+    aff2_stretch(dest, dest, (Vec2){ -1.0f / dim[0], 1.0f / dim[1] });
 }
 
 static inline void vec3_copy(Vec3 dst, Vec3 a) {
@@ -181,6 +305,12 @@ static inline void vec3_diff(Vec3 dst, Vec3 a, Vec3 b) {
     dst[0] = a[0] - b[0];
     dst[1] = a[1] - b[1];
     dst[2] = a[2] - b[2];
+}
+
+static inline void vec3_mul(Vec3 dst, Vec3 a, Vec3 b) {
+    dst[0] = a[0] * b[0];
+    dst[1] = a[1] * b[1];
+    dst[2] = a[2] * b[2];
 }
 
 static inline void mat3_copy(Mat3 dst, Mat3 m) {
@@ -269,6 +399,17 @@ static inline void vec4_diff(Vec4 dst, Vec4 a, Vec4 b) {
     dst[1] = a[1] - b[1];
     dst[2] = a[2] - b[2];
     dst[3] = a[3] - b[3];
+#endif // AVEN_GLM_SIMD
+}
+
+static inline void vec4_mul(Vec4 dst, Vec4 a, Vec4 b) {
+#ifdef AVEN_GLM_SIMD
+    *(Vec4SIMD *)dst = (*(Vec4SIMD *)a) * (*(Vec4SIMD *)b);
+#else
+    dst[0] = a[0] * b[0];
+    dst[1] = a[1] * b[1];
+    dst[2] = a[2] * b[2];
+    dst[3] = a[3] * b[3];
 #endif // AVEN_GLM_SIMD
 }
 

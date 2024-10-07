@@ -38,7 +38,7 @@ static void game_load(GameCtx *ctx, AvenGl *gl) {
     ctx->text.font = aven_gl_text_font_init(
         gl,
         font_bytes,
-        24.0f,
+        32.0f,
         ctx->init_arena
     );
 
@@ -114,7 +114,8 @@ int game_update(
     GameCtx *ctx,
     AvenGl *gl,
     int width,
-    int height
+    int height,
+    AvenArena arena
 ) {
     AvenTimeInst now = aven_time_now();
     int64_t elapsed = aven_time_since(now, ctx->last_update);
@@ -124,7 +125,7 @@ int game_update(
 
     ctx->angle += ROTATION_VELOCITY * elapsed_sec;
 
-    float ratio = (float)width / (float)height;
+    float screen_ratio = (float)width / (float)height;
     float pixel_size = 2.0f / (float)height;
 
     gl->Viewport(0, 0, width, height);
@@ -134,54 +135,58 @@ int game_update(
     gl->Clear(GL_COLOR_BUFFER_BIT);
     assert(gl->GetError() == 0);
 
-    Mat2 mi;
-    mat2_identity(mi);
-    Mat2 mr;
-    mat2_rotate(mr, mi, ctx->angle);
-    Mat2 mp;
-    mat2_ortho(mp, -ratio, ratio, 1.0f, -1.0f);
-    Mat2 mvp;
-    mat2_mul_mat2(mvp, mp, mr);
-
-    Vec2 pos = { 0.0f, 0.0f };
+    Aff2 cam_trans;
+    aff2_camera_position(
+        cam_trans,
+        (Vec2){ 0.0f, 0.0f },
+        (Vec2){ screen_ratio, 1.0f },
+        ctx->angle
+    );
 
     aven_gl_text_geometry_clear(&ctx->text.geometry);
     aven_gl_shape_geometry_clear(&ctx->shapes.geometry);
 
-    aven_gl_shape_geometry_push_rectangle(
-        &ctx->shapes.geometry,
+    Aff2 square_trans;
+    aff2_position(
+        square_trans,
         (Vec2){ -0.5f, -0.5f },
         (Vec2){ 0.4f, 0.4f },
-        ctx->angle,
+        0.0f
+    );
+    aven_gl_shape_geometry_push_square(
+        &ctx->shapes.geometry,
+        square_trans,
         0.8f,
         (Vec4){ 0.75f, 0.75f, 0.0f, 1.0f }
     );
 
-    aven_gl_shape_geometry_push_triangle_equilateral(
-        &ctx->shapes.geometry,
+    Aff2 triangle_trans;
+    aff2_position(
+        triangle_trans,
         (Vec2){ 0.5f, 0.5f },
-        0.25f,
-        ctx->angle,
+        (Vec2){ 0.25f, 0.25f },
+        0.0f
+    );
+    aven_gl_shape_geometry_push_triangle_isoceles(
+        &ctx->shapes.geometry,
+        triangle_trans,
         0.5f,
         (Vec4){ 0.15f, 0.45f, 0.75f, 1.0f }
     );
 
-    aven_gl_shape_geometry_push_triangle_isoceles(
-        &ctx->shapes.geometry,
-        (Vec2){ -0.5f, 0.5f },
-        (Vec2){ 0.25f, 0.35f },
-        ctx->angle,
-        0.75f,
-        (Vec4){ 0.15f, 0.45f, 0.75f, 1.0f }
-    );
-
-    aven_gl_text_geometry_push(
-        &ctx->text.geometry,
+    AvenGlTextLine hello_line = aven_gl_text_line(
         &ctx->text.font,
-        (Vec2){ 0.0f, 0.0f },
+        aven_str("Hello, World!"),
+        &arena
+    );
+    Aff2 hello_trans;
+    aff2_identity(hello_trans);
+    aven_gl_text_geometry_push_line(
+        &ctx->text.geometry,
+        &hello_line,
+        hello_trans,
         pixel_size,
-        (Vec4){ 1.0f, 1.0f, 1.0f, 1.0f },
-        aven_str("Hello, World!")
+        (Vec4){ 1.0f, 1.0f, 1.0f, 1.0f }
     );
 
     aven_gl_shape_buffer_update(gl, &ctx->shapes.buffer, &ctx->shapes.geometry);
@@ -191,16 +196,14 @@ int game_update(
         gl,
         &ctx->shapes.ctx,
         &ctx->shapes.buffer,
-        mvp,
-        pos
+        cam_trans
     );
     aven_gl_text_geometry_draw(
         gl,
         &ctx->text.ctx,
         &ctx->text.buffer,
         &ctx->text.font,
-        mvp,
-        pos
+        cam_trans
     );
 
     return 0;
