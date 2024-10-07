@@ -499,7 +499,7 @@ static inline void aven_gl_shape_geometry_push_triangle_right(
 //         color
 //     );
 // }
- 
+
 static inline void aven_gl_shape_geometry_push_square(
     AvenGlShapeGeometry *geometry,
     Aff2 trans,

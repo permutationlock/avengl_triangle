@@ -55,8 +55,6 @@ static inline void vec2_scale(Vec2 dst, float s, Vec2 a) {
 #else
     dst[0] = a[0] * s;
     dst[1] = a[1] * s;
-    dst[2] = a[2] * s;
-    dst[3] = a[3] * s;
 #endif // AVEN_GLM_SIMD
 }
 
@@ -69,7 +67,7 @@ static inline void vec2_add(Vec2 dst, Vec2 a, Vec2 b) {
 #endif // AVEN_GLM_SIMD
 }
 
-static inline void vec2_diff(Vec2 dst, Vec2 a, Vec2 b) {
+static inline void vec2_sub(Vec2 dst, Vec2 a, Vec2 b) {
 #ifdef AVEN_GLM_SIMD
     *(Vec2SIMD *)dst = *(Vec2SIMD *)a - *(Vec2SIMD *)b;
 #else
@@ -99,7 +97,7 @@ static inline float vec2_mag(Vec2 a) {
 
 static inline float vec2_dist(Vec2 a, Vec2 b) {
     Vec2 ab;
-    vec2_diff(ab, b, a);
+    vec2_sub(ab, b, a);
     return vec2_mag(ab);
 }
 
@@ -207,13 +205,8 @@ static inline void mat2_stretch(
 
 static inline void aff2_identity(Aff2 t) {
     mat2_identity(t);
-#ifdef AVEN_GLM_SIMD
     Vec2 zero = { 0.0f, 0.0f };
     vec2_copy(t[2], zero);
-#else
-    Mat2 zero = { 0.0f, 0.0f, 0.0f, 0.0f };
-    mat2_copy(t[2], zero);
-#endif
 }
 
 static inline void aff2_add_vec2(Aff2 dest, Aff2 t, Vec2 v) {
@@ -221,9 +214,9 @@ static inline void aff2_add_vec2(Aff2 dest, Aff2 t, Vec2 v) {
     vec2_add(dest[2], t[2], v);
 }
 
-static inline void aff2_diff_vec2(Aff2 dest, Aff2 t, Vec2 v) {
+static inline void aff2_sub_vec2(Aff2 dest, Aff2 t, Vec2 v) {
     mat2_copy(dest, t);
-    vec2_diff(dest[2], t[2], v);
+    vec2_sub(dest[2], t[2], v);
 }
 
 static inline void mat2_mul_aff2(Aff2 dest, Mat2 m, Aff2 t) {
@@ -274,7 +267,7 @@ static inline void aff2_camera_position(
     float theta
 ) {
     aff2_identity(dest);
-    aff2_diff_vec2(dest, dest, pos);
+    aff2_sub_vec2(dest, dest, pos);
     aff2_rotate(dest, dest, -theta);
     aff2_stretch(dest, dest, (Vec2){ -1.0f / dim[0], 1.0f / dim[1] });
 }
@@ -301,7 +294,7 @@ static inline void vec3_add(Vec3 dst, Vec3 a, Vec3 b) {
     dst[2] = a[2] + b[2];
 }
 
-static inline void vec3_diff(Vec3 dst, Vec3 a, Vec3 b) {
+static inline void vec3_sub(Vec3 dst, Vec3 a, Vec3 b) {
     dst[0] = a[0] - b[0];
     dst[1] = a[1] - b[1];
     dst[2] = a[2] - b[2];
@@ -391,7 +384,7 @@ static inline void vec4_add(Vec4 dst, Vec4 a, Vec4 b) {
 #endif // AVEN_GLM_SIMD
 }
 
-static inline void vec4_diff(Vec4 dst, Vec4 a, Vec4 b) {
+static inline void vec4_sub(Vec4 dst, Vec4 a, Vec4 b) {
 #ifdef AVEN_GLM_SIMD
     *(Vec4SIMD *)dst = *(Vec4SIMD *)a - *(Vec4SIMD *)b;
 #else

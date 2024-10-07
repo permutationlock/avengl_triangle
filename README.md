@@ -40,11 +40,12 @@ gcc -o build build.c
 ./build
 ```
 
-The TinyCC compiler needs to define `__BIGGEST_ALIGNMENT__` to the appropratiate
+The TinyCC compiler needs either `-std=c11` flag or a definition of the
+`__BIGGEST_ALIGNMENT__` macro to the appropratiate
 value for the given system, e.g. 16 for `x86_64` Linux.
 
 ```
-tcc -D__BIGGEST_ALIGNMENT__=16 -o build build.c
+tcc -std=c11 -o build build.c
 ./build
 ```
 
@@ -90,8 +91,8 @@ argument to run the `build` executable in hot reload mode.
 ```
 
 The project will build and run while the build system watches for changes to
-the files source files.
-If a file in the root of `src/` is modified, then the application will close,
+source files.
+If a file in the root of `src/` is modified the application will close,
 rebuild, and run. However, if changes are made to files in
 `src/game/`, they will hot reload into the running executable.
 

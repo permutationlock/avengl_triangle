@@ -208,7 +208,7 @@ AvenArg aven_build_common_args_data[] = {
             .data = { .arg_str = "/std:c11" },
     #endif 
 #elif defined(__TINYC__)
-            .data = { .arg_str = "-D__BIGGEST_ALIGNMENT__=16" },
+            .data = { .arg_str = "-std=c11" },
 #else
             .data = { .arg_str = "" },
 #endif
