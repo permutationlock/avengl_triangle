@@ -4,9 +4,9 @@
 #include <aven.h>
 #include <aven/arena.h>
 #include <aven/str.h>
+#include <aven/math.h>
 
 #include "../gl.h"
-#include "../glm.h"
 
 typedef struct {
    unsigned short x0;
@@ -387,7 +387,7 @@ typedef struct {
     Vec2 dim; 
 } AvenGlTextLine;
 
-static float aven_gl_text_quad(
+static inline float aven_gl_text_quad(
     AvenGlTextFont *font,
     float x,
     char glyph,
@@ -449,9 +449,9 @@ static inline AvenGlTextLine aven_gl_text_line(
  
 static void aven_gl_text_geometry_push_quad(
     AvenGlTextGeometry *geometry,
+    AvenGlTextQuad *q,
     Aff2 trans,
-    Vec4 color,
-    AvenGlTextQuad *q
+    Vec4 color
 ) {    
     Vec2 vertices[4] = {
         { q->p0[0], q->p0[1] },
@@ -516,9 +516,9 @@ static inline void aven_gl_text_geometry_push_line(
     for (size_t i = 0; i < line->quads.len; i += 1) {
         aven_gl_text_geometry_push_quad(
             geometry,
+            &slice_get(line->quads, i),
             text_trans,
-            color,
-            &slice_get(line->quads, i)
+            color
         );
     }
 }

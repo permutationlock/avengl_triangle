@@ -2,47 +2,18 @@
 #define AVENGL_TRIANGLE_BUILD_H
 
 static inline AvenArgSlice avengl_triangle_build_args(AvenArena *arena) {
-    AvenArg triangle_arg_data[] = {
-        {
-            .name = "-no-glfw",
-            .description = "Don't build GLFW locally",
-            .type = AVEN_ARG_TYPE_BOOL,
-        },
-        {
-            .name = "-syslibs",
-            .description = "System libraries to link",
-            .type = AVEN_ARG_TYPE_STRING,
-            .value = {
-                .type = AVEN_ARG_TYPE_STRING,
-#if defined(BUILD_DEFAULT_SYSLIBS)
-                .data = { .arg_str = BUILD_DEFAULT_SYSLIBS },
-#elif defined(_WIN32)
-        #if defined(_MSC_VER) and !defined(__clang__)
-                .data = {
-                    .arg_str = "kernel32.lib user32.lib gdi32.lib shell32.lib"
-                },
-        #else
-                .data = { .arg_str = "kernel32 user32 gdi32 shell32" },
-        #endif
-#else
-                .data = { .arg_str = "m dl" },
-#endif
-            },
-        },
-        libaven_build_arg_windres_manifest,
-    };
-    AvenArgSlice triangle_args = slice_array(triangle_arg_data);
     AvenArgSlice gl_args = libavengl_build_args();
+    AvenArgSlice libaven_args = libaven_build_args();
 
-    AvenArgSlice args = { .len = triangle_args.len + gl_args.len };
+    AvenArgSlice args = { .len = 1 + gl_args.len };
     args.ptr = aven_arena_create_array(AvenArg, arena, args.len); 
     size_t i = 0;
     for (size_t j = 0; j < gl_args.len; j += 1) {
         slice_get(args, i) = slice_get(gl_args, j);
         i += 1;
     }
-    for (size_t j = 0; j < triangle_args.len; j += 1) {
-        slice_get(args, i) = slice_get(triangle_args, j);
+    for (size_t j = 0; j < libaven_args.len; j += 1) {
+        slice_get(args, i) = slice_get(libaven_args, j);
         i += 1;
     }
 
@@ -51,9 +22,7 @@ static inline AvenArgSlice avengl_triangle_build_args(AvenArena *arena) {
 
 typedef struct {
     LibAvenGlBuildOpts libavengl;
-    AvenStrSlice syslibs;
-    bool no_glfw;
-    bool winutf8;
+    LibAvenBuildOpts libaven;
 } AvenGlTriangleBuildOpts;
 
 static inline AvenGlTriangleBuildOpts avengl_triangle_build_opts(
@@ -62,16 +31,7 @@ static inline AvenGlTriangleBuildOpts avengl_triangle_build_opts(
 ) {
     AvenGlTriangleBuildOpts opts = { 0 };
     opts.libavengl = libavengl_build_opts(args, arena);
-    opts.syslibs = aven_str_split(
-        aven_str_cstr(aven_arg_get_str(args, "-syslibs")),
-        ' ',
-        arena
-    );
-    opts.no_glfw = aven_arg_get_bool(args, "-no-glfw");
-    opts.winutf8 = aven_arg_get_int(
-        args,
-        libaven_build_arg_windres_manifest.name
-    ) != 0;
+    opts.libaven = libaven_build_opts(args, arena);
 
     return opts;
 }
@@ -194,7 +154,7 @@ static inline AvenBuildStep avengl_triangle_build_step_hot_exe(
     AvenStr macro_data[] = { aven_str("HOT_RELOAD") };
     AvenStrSlice macros = slice_array(macro_data);
 
-    if (triangle_opts->no_glfw) {
+    if (triangle_opts->libavengl.no_glfw) {
         includes.len -= 1;
     }
 
@@ -216,7 +176,7 @@ static inline AvenBuildStep avengl_triangle_build_step_hot_exe(
         .len = 1,
     };
 
-    if (!triangle_opts->no_glfw) {
+    if (!triangle_opts->libavengl.no_glfw) {
         AvenBuildStep *glfw_step = aven_arena_create(AvenBuildStep, arena);
         *glfw_step = libavengl_build_step_glfw(
             opts,
@@ -229,7 +189,7 @@ static inline AvenBuildStep avengl_triangle_build_step_hot_exe(
         slice_get(objs, objs.len - 1) = glfw_step;
     }
 
-    if (triangle_opts->winutf8) {
+    if (triangle_opts->libaven.winutf8) {
         AvenBuildStep *libaven_dir_step = aven_arena_create(
             AvenBuildStep,
             arena
@@ -253,7 +213,7 @@ static inline AvenBuildStep avengl_triangle_build_step_hot_exe(
 
     return aven_build_common_step_ld_exe_ex(
         opts,
-        triangle_opts->syslibs,
+        triangle_opts->libavengl.syslibs,
         objs,
         out_dir_step,
         aven_str("avengl_triangle"),
@@ -303,7 +263,7 @@ static inline AvenBuildStep avengl_triangle_build_step_exe(
     AvenStrSlice includes = slice_array(include_data);
     AvenStrSlice macros = { 0 };
 
-    if (triangle_opts->no_glfw) {
+    if (triangle_opts->libavengl.no_glfw) {
         includes.len -= 1;
     }
 
@@ -326,7 +286,7 @@ static inline AvenBuildStep avengl_triangle_build_step_exe(
         .len = 2,
     };
 
-    if (!triangle_opts->no_glfw) {
+    if (!triangle_opts->libavengl.no_glfw) {
         AvenBuildStep *glfw_step = aven_arena_create(AvenBuildStep, arena);
         *glfw_step = libavengl_build_step_glfw(
             opts,
@@ -339,7 +299,7 @@ static inline AvenBuildStep avengl_triangle_build_step_exe(
         slice_get(objs, objs.len - 1) = glfw_step;
     }
 
-    if (triangle_opts->winutf8) {
+    if (triangle_opts->libaven.winutf8) {
         AvenBuildStep *libaven_dir_step = aven_arena_create(
             AvenBuildStep,
             arena
@@ -363,7 +323,7 @@ static inline AvenBuildStep avengl_triangle_build_step_exe(
 
     return aven_build_common_step_ld_exe_ex(
         opts,
-        triangle_opts->syslibs,
+        triangle_opts->libavengl.syslibs,
         objs,
         out_dir_step,
         aven_str("avengl_triangle"),

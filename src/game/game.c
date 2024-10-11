@@ -7,17 +7,16 @@
 #endif
 #include <aven.h>
 #include <aven/arena.h>
-#include <aven/gl.h>
-#include <aven/glm.h>
 #include <aven/gl/shape.h>
 #include <aven/gl/text.h>
+#include <aven/math.h>
 #include <aven/str.h>
 #include <aven/time.h>
 
 #include "../game.h"
 #include "font.h"
 
-#define ROTATION_VELOCITY (2.0f * AVEN_GLM_PI_F / 10.0f)
+#define ROTATION_VELOCITY (2.0f * AVEN_MATH_PI_F / 100.0f)
 
 #if !defined(HOT_RELOAD)
 static
@@ -150,7 +149,7 @@ int game_update(
     aff2_position(
         square_trans,
         (Vec2){ -0.5f, -0.5f },
-        (Vec2){ 0.4f, 0.4f },
+        (Vec2){ 0.02f, 0.02f },
         0.0f
     );
     aven_gl_shape_geometry_push_square(
@@ -196,6 +195,7 @@ int game_update(
         gl,
         &ctx->shapes.ctx,
         &ctx->shapes.buffer,
+        pixel_size,
         cam_trans
     );
     aven_gl_text_geometry_draw(

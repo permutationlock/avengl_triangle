@@ -22,14 +22,13 @@
 
 #include "build.h"
 
-AvenArg custom_arg_data[] = {
+static AvenArg custom_arg_data[] = {
     {
         .name = "watch",
         .description = "Automatically run and reload code on changes to src",
         .type = AVEN_ARG_TYPE_BOOL,
     },
 };
-AvenArgSlice custom_args = slice_array(custom_arg_data);
 
 typedef enum {
     REBUILD_STATE_NONE = 0,
@@ -47,6 +46,7 @@ int main(int argc, char **argv) {
 
     // Construct and parse build arguments
 
+    AvenArgSlice custom_args = slice_array(custom_arg_data);
     AvenArgSlice triangle_args = avengl_triangle_build_args(&arena);
     AvenArgSlice common_args = aven_build_common_args();
 

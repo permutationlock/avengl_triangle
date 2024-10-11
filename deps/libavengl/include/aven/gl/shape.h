@@ -3,13 +3,14 @@
 
 #include <aven.h>
 #include <aven/arena.h>
+#include <aven/math.h>
 
 #include "../gl.h"
-#include "../glm.h"
 
 typedef struct {
     Vec4 color;
-    Vec4 pos;
+    Vec4 info;
+    Vec2 pos;
 } AvenGlShapeVertex;
 
 typedef struct {
@@ -23,7 +24,9 @@ typedef struct {
     GLuint program;
     GLuint utrans_location;
     GLuint upos_location;
+    GLuint upx_location;
     GLuint vpos_location;
+    GLuint vinfo_location;
     GLuint vcolor_location;
 } AvenGlShapeCtx;
 
@@ -80,20 +83,25 @@ static inline AvenGlShapeCtx aven_gl_shape_ctx_init(AvenGl *gl) {
         "precision mediump float;\n"
         "uniform mat2 uTrans;\n"
         "uniform vec2 uPos;\n"
-        "attribute vec4 vPos;\n"
+        "attribute vec2 vPos;\n"
+        "attribute vec4 vInfo;\n"
         "attribute vec4 vColor;\n"
-        "varying vec2 fPos;\n"
+        "varying vec2 tPos;\n"
+        "varying vec2 tDim;\n"
         "varying vec4 fColor;\n"
         "void main() {\n"
         "    gl_Position = vec4((uTrans * vPos.xy) + uPos, 0.0, 1.0);\n"
-        "    fPos = vPos.zw;\n"
+        "    tPos = vInfo.xy;\n"
+        "    tDim = vInfo.zw;\n"
         "    fColor = vColor;\n"
         "}\n";
 
     static const char* fragment_shader_text =
         "#version 100\n"
         "precision mediump float;\n"
-        "varying vec2 fPos;\n"
+        "uniform float uPx;\n"
+        "varying vec2 tPos;\n"
+        "varying vec2 tDim;\n"
         "varying vec4 fColor;\n"
         "float oversample(vec2 p) {\n"
         "    if (dot(p, p) > 1.0) {\n"
@@ -102,15 +110,15 @@ static inline AvenGlShapeCtx aven_gl_shape_ctx_init(AvenGl *gl) {
         "    return 1.0;\n"
         "}\n"
         "void main() {\n"
-        "    float offset = 0.004;\n"
         "    float magnitude = 0.0;\n"
-        "    magnitude += oversample(fPos);\n"
-        "    magnitude += oversample(fPos + vec2(-offset, 0.0));\n"
-        "    magnitude += oversample(fPos + vec2(offset, 0.0));\n"
-        "    magnitude += oversample(fPos + vec2(0.0, -offset));\n"
-        "    magnitude += oversample(fPos + vec2(0.0, offset));\n"
-        "    magnitude /= 5.0;\n"
-        "    gl_FragColor = fColor * magnitude;\n"
+        "    vec2 offset = vec2(uPx / tDim.x, uPx / tDim.y);\n"
+        "    magnitude += oversample(tPos);\n"
+        "    magnitude += oversample(tPos + vec2(-offset.x, -offset.y));\n"
+        "    magnitude += oversample(tPos + vec2(offset.x, -offset.y));\n"
+        "    magnitude += oversample(tPos + vec2(offset.x, offset.y));\n"
+        "    magnitude += oversample(tPos + vec2(-offset.x, offset.y));\n"
+        "    magnitude /= 500.0;\n"
+        "    gl_FragColor = fColor + magnitude;\n"
         "}\n";
 
     ctx.vertex_shader = gl->CreateShader(GL_VERTEX_SHADER);
@@ -146,10 +154,19 @@ static inline AvenGlShapeCtx aven_gl_shape_ctx_init(AvenGl *gl) {
         "uPos"
     );
     assert(gl->GetError() == 0);
+    ctx.upx_location = (GLuint)gl->GetUniformLocation(
+        ctx.program,
+        "uPx"
+    );
+    assert(gl->GetError() == 0);
 
     ctx.vpos_location = (GLuint)gl->GetAttribLocation(
         ctx.program,
         "vPos"
+    );
+    ctx.vinfo_location = (GLuint)gl->GetAttribLocation(
+        ctx.program,
+        "vInfo"
     );
     assert(gl->GetError() == 0);
     ctx.vcolor_location = (GLuint)gl->GetAttribLocation(
@@ -276,6 +293,7 @@ static inline void aven_gl_shape_draw(
     AvenGl *gl,
     AvenGlShapeCtx *ctx,
     AvenGlShapeBuffer *buffer,
+    float pixel_size,
     Aff2 cam_trans
 ) {
     gl->BindBuffer(GL_ARRAY_BUFFER, buffer->vertex);
@@ -288,15 +306,26 @@ static inline void aven_gl_shape_draw(
 
     gl->EnableVertexAttribArray(ctx->vpos_location);
     assert(gl->GetError() == 0);
+    gl->EnableVertexAttribArray(ctx->vinfo_location);
+    assert(gl->GetError() == 0);
     gl->EnableVertexAttribArray(ctx->vcolor_location);
     assert(gl->GetError() == 0);
     gl->VertexAttribPointer(
         ctx->vpos_location,
-        4,
+        2,
         GL_FLOAT,
         GL_FALSE,
         sizeof(AvenGlShapeVertex),
         (void*)offsetof(AvenGlShapeVertex, pos)
+    );
+    assert(gl->GetError() == 0);
+    gl->VertexAttribPointer(
+        ctx->vinfo_location,
+        4,
+        GL_FLOAT,
+        GL_FALSE,
+        sizeof(AvenGlShapeVertex),
+        (void*)offsetof(AvenGlShapeVertex, info)
     );
     assert(gl->GetError() == 0);
     gl->VertexAttribPointer(
@@ -326,6 +355,12 @@ static inline void aven_gl_shape_draw(
         (GLfloat*)cam_trans[2]
     );
     assert(gl->GetError() == 0);
+    gl->Uniform1fv(
+        (GLint)ctx->upx_location,
+        1,
+        (GLfloat*)&pixel_size
+    );
+    assert(gl->GetError() == 0);
 
     gl->DrawElements(
         GL_TRIANGLES,
@@ -339,6 +374,8 @@ static inline void aven_gl_shape_draw(
     assert(gl->GetError() == 0);
     gl->DisableVertexAttribArray(ctx->vcolor_location);
     assert(gl->GetError() == 0);
+    gl->DisableVertexAttribArray(ctx->vinfo_location);
+    assert(gl->GetError() == 0);
     gl->DisableVertexAttribArray(ctx->vpos_location);
     assert(gl->GetError() == 0);
 
@@ -348,67 +385,67 @@ static inline void aven_gl_shape_draw(
     assert(gl->GetError() == 0);
 }
 
-static void aven_gl_shape_geometry_push_triangle_raw(
-    AvenGlShapeGeometry *geometry,
-    Vec4 p1,
-    Vec4 p2,
-    Vec4 p3,
-    Vec4 color
-) {
-    size_t start_index = geometry->vertices.len;
+// static void aven_gl_shape_geometry_push_triangle_raw(
+//     AvenGlShapeGeometry *geometry,
+//     Vec4 p1,
+//     Vec4 p2,
+//     Vec4 p3,
+//     Vec4 color
+// ) {
+//     size_t start_index = geometry->vertices.len;
 
-    list_push(geometry->vertices) = (AvenGlShapeVertex){
-        .pos = { p1[0], p1[1], p1[2], p1[3] },
-        .color = { color[0], color[1], color[2], color[3] },
-    };
-    list_push(geometry->vertices) = (AvenGlShapeVertex){
-        .pos = { p2[0], p2[1], p2[2], p2[3] },
-        .color = { color[0], color[1], color[2], color[3] },
-    };
-    list_push(geometry->vertices) = (AvenGlShapeVertex){
-        .pos = { p3[0], p3[1], p3[2], p3[3] },
-        .color = { color[0], color[1], color[2], color[3] },
-    };
+//     list_push(geometry->vertices) = (AvenGlShapeVertex){
+//         .pos = { p1[0], p1[1], p1[2], p1[3] },
+//         .color = { color[0], color[1], color[2], color[3] },
+//     };
+//     list_push(geometry->vertices) = (AvenGlShapeVertex){
+//         .pos = { p2[0], p2[1], p2[2], p2[3] },
+//         .color = { color[0], color[1], color[2], color[3] },
+//     };
+//     list_push(geometry->vertices) = (AvenGlShapeVertex){
+//         .pos = { p3[0], p3[1], p3[2], p3[3] },
+//         .color = { color[0], color[1], color[2], color[3] },
+//     };
 
-    list_push(geometry->indices) = (GLushort)start_index + 0;
-    list_push(geometry->indices) = (GLushort)start_index + 1;
-    list_push(geometry->indices) = (GLushort)start_index + 2;
-}
+//     list_push(geometry->indices) = (GLushort)start_index + 0;
+//     list_push(geometry->indices) = (GLushort)start_index + 1;
+//     list_push(geometry->indices) = (GLushort)start_index + 2;
+// }
 
-static void aven_gl_shape_geometry_push_quad_raw(
-    AvenGlShapeGeometry *geometry,
-    Vec4 p1,
-    Vec4 p2,
-    Vec4 p3,
-    Vec4 p4,
-    Vec4 color
-) {
-    size_t start_index = geometry->vertices.len;
+// static void aven_gl_shape_geometry_push_quad_raw(
+//     AvenGlShapeGeometry *geometry,
+//     Vec4 p1,
+//     Vec4 p2,
+//     Vec4 p3,
+//     Vec4 p4,
+//     Vec4 color
+// ) {
+//     size_t start_index = geometry->vertices.len;
 
-    list_push(geometry->vertices) = (AvenGlShapeVertex){
-        .pos = { p1[0], p1[1], p1[2], p1[3] },
-        .color = { color[0], color[1], color[2], color[3] },
-    };
-    list_push(geometry->vertices) = (AvenGlShapeVertex){
-        .pos = { p2[0], p2[1], p2[2], p2[3] },
-        .color = { color[0], color[1], color[2], color[3] },
-    };
-    list_push(geometry->vertices) = (AvenGlShapeVertex){
-        .pos = { p3[0], p3[1], p3[2], p3[3] },
-        .color = { color[0], color[1], color[2], color[3] },
-    };
-    list_push(geometry->vertices) = (AvenGlShapeVertex){
-        .pos = { p4[0], p4[1], p4[2], p4[3] },
-        .color = { color[0], color[1], color[2], color[3] },
-    };
+//     list_push(geometry->vertices) = (AvenGlShapeVertex){
+//         .pos = { p1[0], p1[1], p1[2], p1[3] },
+//         .color = { color[0], color[1], color[2], color[3] },
+//     };
+//     list_push(geometry->vertices) = (AvenGlShapeVertex){
+//         .pos = { p2[0], p2[1], p2[2], p2[3] },
+//         .color = { color[0], color[1], color[2], color[3] },
+//     };
+//     list_push(geometry->vertices) = (AvenGlShapeVertex){
+//         .pos = { p3[0], p3[1], p3[2], p3[3] },
+//         .color = { color[0], color[1], color[2], color[3] },
+//     };
+//     list_push(geometry->vertices) = (AvenGlShapeVertex){
+//         .pos = { p4[0], p4[1], p4[2], p4[3] },
+//         .color = { color[0], color[1], color[2], color[3] },
+//     };
 
-    list_push(geometry->indices) = (GLushort)start_index + 0;
-    list_push(geometry->indices) = (GLushort)start_index + 1;
-    list_push(geometry->indices) = (GLushort)start_index + 2;
-    list_push(geometry->indices) = (GLushort)start_index + 0;
-    list_push(geometry->indices) = (GLushort)start_index + 2;
-    list_push(geometry->indices) = (GLushort)start_index + 3;
-}
+//     list_push(geometry->indices) = (GLushort)start_index + 0;
+//     list_push(geometry->indices) = (GLushort)start_index + 1;
+//     list_push(geometry->indices) = (GLushort)start_index + 2;
+//     list_push(geometry->indices) = (GLushort)start_index + 0;
+//     list_push(geometry->indices) = (GLushort)start_index + 2;
+//     list_push(geometry->indices) = (GLushort)start_index + 3;
+// }
 
 
 static inline void aven_gl_shape_geometry_push_triangle(
@@ -424,17 +461,43 @@ static inline void aven_gl_shape_geometry_push_triangle(
     aff2_transform(p2, trans, p2);
     aff2_transform(p3, trans, p3);
 
+    Vec2 mid;
+    vec2_midpoint(mid, p2, p3);
+
+    Vec2 up;
+    vec2_sub(up, p1, mid);
+
+    Vec2 base;
+    vec2_sub(base, p2, p3);
+
+    float width = vec2_mag(up);
+    float height = vec2_mag(base);
+
     // Roundness calculation done for equilateral triangle
     float rs = 1.0f + roundness;
-    float sx = AVEN_GLM_SQRT3_F / 2.0f;
+    float sx = AVEN_MATH_SQRT3_F / 2.0f;
 
-    aven_gl_shape_geometry_push_triangle_raw(
-        geometry,
-        (Vec4){ p1[0], p1[1],     0.0f,  rs * 1.0f },
-        (Vec4){ p2[0], p2[1], rs * -sx, rs * -0.5f },
-        (Vec4){ p3[0], p3[1],  rs * sx, rs * -0.5f },
-        color
-    );
+    size_t start_index = geometry->vertices.len;
+
+    list_push(geometry->vertices) = (AvenGlShapeVertex){
+        .pos = { p1[0], p1[1] },
+        .info = { 0.0f, rs * 1.0f, height, width },
+        .color = { color[0], color[1], color[2], color[3] },
+    };
+    list_push(geometry->vertices) = (AvenGlShapeVertex){
+        .pos = { p2[0], p2[1] },
+        .info = { rs * -sx, rs * -0.5f, height, width },
+        .color = { color[0], color[1], color[2], color[3] },
+    };
+    list_push(geometry->vertices) = (AvenGlShapeVertex){
+        .pos = { p3[0], p3[1] },
+        .info = { rs * sx, rs * -0.5f, height, width },
+        .color = { color[0], color[1], color[2], color[3] },
+    };
+
+    list_push(geometry->indices) = (GLushort)start_index + 0;
+    list_push(geometry->indices) = (GLushort)start_index + 1;
+    list_push(geometry->indices) = (GLushort)start_index + 2;
 }
 
 static inline void aven_gl_shape_geometry_push_triangle_isoceles(
@@ -479,27 +542,6 @@ static inline void aven_gl_shape_geometry_push_triangle_right(
     );
 }
 
-// static inline void aven_gl_shape_geometry_push_triangle_isoceles(
-//     AvenGlShapeGeometry *geometry,
-//     Aff2 trans,
-//     Vec2 center,
-//     Vec2 dim,
-//     float rotation,
-//     float roundness,
-//     Vec4 color
-// ) {
-//     Aff2 tri_trans;
-//     aff2_position_unit(tri_trans, center, dim, rotation);
-//     aff2_compose(tri_trans, trans, tri_trans);
-
-//     aven_gl_shape_geometry_push_unit_triangle_isoceles(
-//         geometry,
-//         tri_trans, 
-//         roundness, 
-//         color
-//     );
-// }
-
 static inline void aven_gl_shape_geometry_push_square(
     AvenGlShapeGeometry *geometry,
     Aff2 trans,
@@ -516,71 +558,47 @@ static inline void aven_gl_shape_geometry_push_square(
     aff2_transform(p3, trans, p3);
     aff2_transform(p4, trans, p4);
 
-    float rs = (1.0f / AVEN_GLM_SQRT2_F) +
-        roundness * (1.0f - (1.0f / AVEN_GLM_SQRT2_F));
+    float rs = (1.0f / AVEN_MATH_SQRT2_F) +
+        roundness * (1.0f - (1.0f / AVEN_MATH_SQRT2_F));
 
-    aven_gl_shape_geometry_push_quad_raw(
-        geometry,
-        (Vec4){ p1[0], p1[1], -1.0f * rs, -1.0f * rs },
-        (Vec4){ p2[0], p2[1],  1.0f * rs, -1.0f * rs },
-        (Vec4){ p3[0], p3[1],  1.0f * rs,  1.0f * rs },
-        (Vec4){ p4[0], p4[1], -1.0f * rs,  1.0f * rs },
-        color
-    );
+    Vec2 p1p2;
+    vec2_sub(p1p2, p2, p1);
+
+    Vec2 p1p4;
+    vec2_sub(p1p4, p4, p1);
+
+    float width = vec2_mag(p1p2);
+    float height = vec2_mag(p1p4);
+
+    size_t start_index = geometry->vertices.len;
+
+    list_push(geometry->vertices) = (AvenGlShapeVertex){
+        .pos = { p1[0], p1[1] },
+        .info = { -1.0f * rs, -1.0f * rs, width, height },
+        .color = { color[0], color[1], color[2], color[3] },
+    };
+    list_push(geometry->vertices) = (AvenGlShapeVertex){
+        .pos = { p2[0], p2[1] },
+        .info = { 1.0f * rs, -1.0f * rs, width, height },
+        .color = { color[0], color[1], color[2], color[3] },
+    };
+    list_push(geometry->vertices) = (AvenGlShapeVertex){
+        .pos = { p3[0], p3[1] },
+        .info = { 1.0f * rs, 1.0f * rs, width, height },
+        .color = { color[0], color[1], color[2], color[3] },
+    };
+    list_push(geometry->vertices) = (AvenGlShapeVertex){
+        .pos = { p4[0], p4[1] },
+        .info = { -1.0f * rs, 1.0f * rs, width, height },
+        .color = { color[0], color[1], color[2], color[3] },
+    };
+
+    list_push(geometry->indices) = (GLushort)start_index + 0;
+    list_push(geometry->indices) = (GLushort)start_index + 1;
+    list_push(geometry->indices) = (GLushort)start_index + 2;
+    list_push(geometry->indices) = (GLushort)start_index + 0;
+    list_push(geometry->indices) = (GLushort)start_index + 2;
+    list_push(geometry->indices) = (GLushort)start_index + 3;
 }
-
-// static inline void aven_gl_shape_geometry_push_rectangle(
-//     AvenGlShapeGeometry *geometry,
-//     Aff2 trans,
-//     Vec2 center,
-//     Vec2 dim,
-//     float rotation,
-//     float roundness,
-//     Vec4 color
-// ) {
-//     Aff2 rec_trans;
-//     aff2_position_unit(rec_trans, center, dim, rotation);
-//     aff2_compose(rec_trans, trans, rec_trans);
-
-//     aven_gl_shape_geometry_push_unit_square(
-//         geometry,
-//         rec_trans, 
-//         roundness, 
-//         color
-//     );
-// }
- 
-// static inline void aven_gl_shape_geometry_push_line(
-//     AvenGlShapeGeometry *geometry,
-//     Aff2 trans,
-//     Vec2 p1,
-//     Vec2 p2,
-//     float thickness,
-//     Vec4 color
-// ) {
-//     Vec2 center;
-//     vec2_midpoint(center, p1, p2);
-
-//     Vec2 p1p2;
-//     vec2_diff(p1p2, p2, p1);
-
-//     float dist = vec2_mag(p1p2);
-
-//     Aff2 line_trans;
-//     aff2_position_unit(
-//         line_trans,
-//         center,
-//         (Vec2){ dist + 2.0f * thickness, 2.0f * thickness },
-//         vec2_angle_xaxis(p1p2)
-//     );
-//     aff2_compose(line_trans, trans, line_trans);
-    
-//     aven_gl_shape_geometry_push_unit_square(
-//         geometry,
-//         line_trans,
-//         0.0f,
-//         color
-//     );
-// }
 
 #endif // AVEN_GL_SHAPE_H
