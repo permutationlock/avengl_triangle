@@ -52,13 +52,13 @@ static void game_load(GameCtx *ctx, AvenGl *gl) {
         AVEN_GL_BUFFER_USAGE_DYNAMIC
     );
 
-    ctx->shapes.ctx = aven_gl_shape_ctx_init(gl);
-    ctx->shapes.geometry = aven_gl_shape_geometry_init(
+    ctx->shapes.ctx = aven_gl_shape_rounded_ctx_init(gl);
+    ctx->shapes.geometry = aven_gl_shape_rounded_geometry_init(
         128,
         192,
         &ctx->arena
     );
-    ctx->shapes.buffer = aven_gl_shape_buffer_init(
+    ctx->shapes.buffer = aven_gl_shape_rounded_buffer_init(
         gl,
         &ctx->shapes.geometry,
         AVEN_GL_BUFFER_USAGE_DYNAMIC
@@ -66,8 +66,8 @@ static void game_load(GameCtx *ctx, AvenGl *gl) {
 }
 
 static void game_unload(GameCtx *ctx, AvenGl *gl) {
-    aven_gl_shape_buffer_deinit(gl, &ctx->shapes.buffer);
-    aven_gl_shape_ctx_deinit(gl, &ctx->shapes.ctx);
+    aven_gl_shape_rounded_buffer_deinit(gl, &ctx->shapes.buffer);
+    aven_gl_shape_rounded_ctx_deinit(gl, &ctx->shapes.ctx);
     ctx->shapes = (GameShapes){ 0 };
 
     aven_gl_text_buffer_deinit(gl, &ctx->text.buffer);
@@ -143,7 +143,7 @@ int game_update(
     );
 
     aven_gl_text_geometry_clear(&ctx->text.geometry);
-    aven_gl_shape_geometry_clear(&ctx->shapes.geometry);
+    aven_gl_shape_rounded_geometry_clear(&ctx->shapes.geometry);
 
     Aff2 square_trans;
     aff2_position(
@@ -152,7 +152,7 @@ int game_update(
         (Vec2){ 0.02f, 0.02f },
         0.0f
     );
-    aven_gl_shape_geometry_push_square(
+    aven_gl_shape_rounded_geometry_push_square(
         &ctx->shapes.geometry,
         square_trans,
         0.8f,
@@ -166,7 +166,7 @@ int game_update(
         (Vec2){ 0.25f, 0.25f },
         0.0f
     );
-    aven_gl_shape_geometry_push_triangle_isoceles(
+    aven_gl_shape_rounded_geometry_push_triangle_isoceles(
         &ctx->shapes.geometry,
         triangle_trans,
         0.5f,
@@ -188,10 +188,14 @@ int game_update(
         (Vec4){ 1.0f, 1.0f, 1.0f, 1.0f }
     );
 
-    aven_gl_shape_buffer_update(gl, &ctx->shapes.buffer, &ctx->shapes.geometry);
+    aven_gl_shape_rounded_buffer_update(
+        gl,
+        &ctx->shapes.buffer,
+        &ctx->shapes.geometry
+    );
     aven_gl_text_buffer_update(gl, &ctx->text.buffer, &ctx->text.geometry);
 
-    aven_gl_shape_draw(
+    aven_gl_shape_rounded_draw(
         gl,
         &ctx->shapes.ctx,
         &ctx->shapes.buffer,

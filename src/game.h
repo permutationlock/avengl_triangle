@@ -11,9 +11,9 @@
 #define GAME_ARENA_SIZE (4096 * 2000)
 
 typedef struct {
-    AvenGlShapeCtx ctx;
-    AvenGlShapeGeometry geometry;
-    AvenGlShapeBuffer buffer;
+    AvenGlShapeRoundedCtx ctx;
+    AvenGlShapeRoundedGeometry geometry;
+    AvenGlShapeRoundedBuffer buffer;
 } GameShapes;
 
 typedef struct {
