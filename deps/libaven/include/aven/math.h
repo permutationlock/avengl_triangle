@@ -163,9 +163,27 @@ static inline float vec2_angle_xaxis(Vec2 a) {
     return angle;
 }
 
-static inline void vec2_midpoint(Vec2 dest, Vec2 a, Vec2 b) {
-    vec2_add(dest, a, b);
-    vec2_scale(dest, 0.5f, dest);
+static inline void vec2_midpoint(Vec2 dst, Vec2 a, Vec2 b) {
+    vec2_add(dst, a, b);
+    vec2_scale(dst, 0.5f, dst);
+}
+
+static inline void vec2_cwise_perp(Vec2 dst, Vec2 a) {
+#ifdef AVEN_MATH_SIMD
+    *(Vec4SIMD *)dst = (Vec4SIMD){ a[1], -a[0] };
+#else
+    dst[0] = a[1];
+    dst[1] = -a[0];
+#endif
+}
+
+static inline void vec2_ccwise_perp(Vec2 dst, Vec2 a) {
+#ifdef AVEN_MATH_SIMD
+    *(Vec4SIMD *)dst = (Vec4SIMD){ -a[1], a[0] };
+#else
+    dst[0] = -a[1];
+    dst[1] = a[0];
+#endif
 }
 
 static inline void mat2_copy(Mat2 dst, Mat2 m) {
@@ -185,6 +203,28 @@ static inline void mat2_identity(Mat2 m) {
         { 0.0f, 1.0f },
     };
     mat2_copy(m, ident);
+}
+
+static inline void mat2_scale(Mat2 dst, float s, Mat2 m) {
+#ifdef AVEN_MATH_SIMD
+    *(Vec4SIMD *)dst = *(Vec4SIMD *)m * s;
+#else
+    dst[0][0] = m[0][0] * s;
+    dst[0][1] = m[0][1] * s;
+    dst[1][0] = m[1][0] * s;
+    dst[1][1] = m[1][1] * s;
+#endif // AVEN_MATH_SIMD
+}
+
+static inline void mat2_add(Mat2 dst, Mat2 m, Mat2 n) {
+#ifdef AVEN_MATH_SIMD
+    *(Vec4SIMD *)dst = *(Vec4SIMD *)m + *(Vec4SIMD *)n;
+#else
+    dst[0][0] = m[0][0] + n[0][0];
+    dst[0][1] = m[0][1] + n[0][1];
+    dst[1][0] = m[1][0] + n[1][0];
+    dst[1][1] = m[1][1] + n[1][1];
+#endif // AVEN_MATH_SIMD
 }
 
 static inline void mat2_mul_vec2(Vec2 dst, Mat2 m, Vec2 a) {
@@ -237,8 +277,8 @@ static inline void mat2_rotate(Mat2 dst, Mat2 m, float theta) {
 
 static inline void mat2_stretch(
     Mat2 dst,
-    Mat2 m,
-    Vec2 dim
+    Vec2 dim,
+    Mat2 m
 ) {
     Mat2 s = {
         { dim[0],   0.0f },
@@ -247,73 +287,96 @@ static inline void mat2_stretch(
     mat2_mul_mat2(dst, s, m);
 }
 
+static inline void aff2_copy(Aff2 dst, Aff2 t) {
+    mat2_copy(dst, t);
+    vec2_copy(dst[2], t[2]);
+}
+
 static inline void aff2_identity(Aff2 t) {
     mat2_identity(t);
     Vec2 zero = { 0.0f, 0.0f };
     vec2_copy(t[2], zero);
 }
 
-static inline void aff2_add_vec2(Aff2 dest, Aff2 t, Vec2 v) {
-    mat2_copy(dest, t);
-    vec2_add(dest[2], t[2], v);
+static inline void aff2_scale(Aff2 dst, float s, Aff2 t) {
+    mat2_scale(dst, s, t);
+    vec2_scale(dst[2], s, t[2]);
 }
 
-static inline void aff2_sub_vec2(Aff2 dest, Aff2 t, Vec2 v) {
-    mat2_copy(dest, t);
-    vec2_sub(dest[2], t[2], v);
+static inline void aff2_add_vec2(Aff2 dst, Aff2 t, Vec2 v) {
+    mat2_copy(dst, t);
+    vec2_add(dst[2], t[2], v);
 }
 
-static inline void mat2_mul_aff2(Aff2 dest, Mat2 m, Aff2 t) {
-    mat2_mul_mat2(dest, m, t);
-    mat2_mul_vec2(dest[2], m, t[2]);
+static inline void aff2_sub_vec2(Aff2 dst, Aff2 t, Vec2 v) {
+    mat2_copy(dst, t);
+    vec2_sub(dst[2], t[2], v);
 }
 
-static inline void aff2_compose(Aff2 dest, Aff2 t, Aff2 w) {
-    mat2_mul_aff2(dest, t, w);
-    aff2_add_vec2(dest, dest, t[2]);
+static inline void mat2_mul_aff2(Aff2 dst, Mat2 m, Aff2 t) {
+    mat2_mul_mat2(dst, m, t);
+    mat2_mul_vec2(dst[2], m, t[2]);
 }
 
-static inline void aff2_transform(Vec2 dest, Aff2 t, Vec2 v) {
-    mat2_mul_vec2(dest, t, v);
-    vec2_add(dest, t[2], dest);
+static inline void aff2_compose(Aff2 dst, Aff2 t, Aff2 w) {
+    mat2_mul_aff2(dst, t, w);
+    aff2_add_vec2(dst, dst, t[2]);
 }
 
-static inline void aff2_stretch(Aff2 dest, Aff2 t, Vec2 dim) {
+static inline void aff2_transform(Vec2 dst, Aff2 t, Vec2 v) {
+    mat2_mul_vec2(dst, t, v);
+    vec2_add(dst, t[2], dst);
+}
+
+static inline void aff2_stretch(Aff2 dst, Vec2 dim, Aff2 t) {
     Mat2 s;
     mat2_identity(s);
-    mat2_stretch(s, s, dim);
-    mat2_mul_aff2(dest, s, t);
+    mat2_stretch(s, dim, s);
+    mat2_mul_aff2(dst, s, t);
 }
 
-static inline void aff2_rotate(Aff2 dest, Aff2 t, float theta) {
+static inline void aff2_rotate(Aff2 dst, Aff2 t, float theta) {
     Mat2 r;
     mat2_identity(r);
     mat2_rotate(r, r, theta);
-    mat2_mul_aff2(dest, r, t);
+    mat2_mul_aff2(dst, r, t);
 }
 
 static inline void aff2_position(
-    Aff2 dest,
+    Aff2 dst,
     Vec2 pos,
     Vec2 dim,
     float theta
 ) {
-    aff2_identity(dest);
-    aff2_stretch(dest, dest, dim);
-    aff2_rotate(dest, dest, theta);
-    aff2_add_vec2(dest, dest, pos);
+    aff2_identity(dst);
+    aff2_stretch(dst, dim, dst);
+    aff2_rotate(dst, dst, theta);
+    aff2_add_vec2(dst, dst, pos);
 }
 
 static inline void aff2_camera_position(
-    Aff2 dest,
+    Aff2 dst,
     Vec2 pos,
     Vec2 dim,
     float theta
 ) {
-    aff2_identity(dest);
-    aff2_sub_vec2(dest, dest, pos);
-    aff2_rotate(dest, dest, -theta);
-    aff2_stretch(dest, dest, (Vec2){ 1.0f / dim[0], -1.0f / dim[1] });
+    aff2_identity(dst);
+    aff2_sub_vec2(dst, dst, pos);
+    aff2_rotate(dst, dst, -theta);
+    aff2_stretch(dst, (Vec2){ 1.0f / dim[0], -1.0f / dim[1] }, dst);
+}
+
+static inline void aff2_lerp(
+    Aff2 dst,
+    Aff2 t,
+    Aff2 w,
+    float r
+) {
+    Aff2 rm;
+    aff2_scale(rm, r, t);
+    aff2_scale(dst, 1.0f - r, w);
+    mat2_add(dst, rm, dst);
+    vec2_add(dst[2], rm[2], dst[2]);
 }
 
 static inline void vec3_copy(Vec3 dst, Vec3 a) {

@@ -557,7 +557,7 @@ static inline AvenGlShapeRoundedCtx aven_gl_shape_rounded_ctx_init(AvenGl *gl) {
         "    magnitude += oversample(tPos + vec2(offset.x, offset.y));\n"
         "    magnitude += oversample(tPos + vec2(-offset.x, offset.y));\n"
         "    magnitude /= 5.0;\n"
-        "    gl_FragColor = fColor * magnitude;\n"
+        "    gl_FragColor = vec4(fColor.xyz, fColor.w * magnitude);\n"
         "}\n";
 
     ctx.vertex_shader = gl->CreateShader(GL_VERTEX_SHADER);

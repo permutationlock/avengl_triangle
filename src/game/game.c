@@ -155,7 +155,7 @@ int game_update(
     aven_gl_shape_rounded_geometry_push_square(
         &ctx->shapes.geometry,
         square_trans,
-        0.8f,
+        0.15f,
         (Vec4){ 0.75f, 0.75f, 0.0f, 1.0f }
     );
 
@@ -169,7 +169,7 @@ int game_update(
     aven_gl_shape_rounded_geometry_push_triangle_isoceles(
         &ctx->shapes.geometry,
         triangle_trans,
-        0.5f,
+        0.3f,
         (Vec4){ 0.15f, 0.45f, 0.75f, 1.0f }
     );
 

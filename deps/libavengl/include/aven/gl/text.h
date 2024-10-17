@@ -510,7 +510,7 @@ static inline void aven_gl_text_geometry_push_line(
     Aff2 text_trans;
     aff2_identity(text_trans);
     aff2_add_vec2(text_trans, text_trans, offset);
-    aff2_stretch(text_trans, text_trans, (Vec2){ scale, scale });
+    aff2_stretch(text_trans, (Vec2){ scale, scale }, text_trans);
     aff2_compose(text_trans, trans, text_trans);
 
     for (size_t i = 0; i < line->quads.len; i += 1) {

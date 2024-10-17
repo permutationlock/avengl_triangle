@@ -23,4 +23,8 @@ static inline uint32_t aven_rng_rand_bounded(AvenRng rng, uint32_t bound) {
     return n % bound;
 }
 
+static inline float aven_rng_randf(AvenRng rng) {
+    return (float)aven_rng_rand(rng) / (float)0xffffffffU;
+}
+
 #endif // RNG_H
