@@ -1,5 +1,5 @@
 // config.h can be used to defines custom defaults for flags
-#if !defined(_WIN32) && defined(__GNUC__)
+/*#if !defined(_WIN32) && defined(__GNUC__)
     #define AVEN_BUILD_COMMON_DEFAULT_CCFLAGS \
         "-DAVEN_UNREACHABLE_ASSERT " \
         "-std=c11 -pedantic -fstrict-aliasing -O0 -g3 -Werror -Wall -Wextra " \
@@ -19,4 +19,4 @@
         "-Wno-unused-parameter -Wno-unused-function -Wno-sign-compare " \
         "-Wno-missing-field-initializers " \
         "-fsanitize-trap -fsanitize=unreachable -fsanitize=undefined"
-#endif
+#endif */

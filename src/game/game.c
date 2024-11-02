@@ -16,7 +16,8 @@
 #include "../game.h"
 #include "font.h"
 
-#define ROTATION_VELOCITY (2.0f * AVEN_MATH_PI_F / 100.0f)
+#define ROTATION_VELOCITY 0.0f
+// (2.0f * AVEN_MATH_PI_F / 100.0f)
 
 #if !defined(HOT_RELOAD)
 static
@@ -173,9 +174,45 @@ int game_update(
         (Vec4){ 0.15f, 0.45f, 0.75f, 1.0f }
     );
 
+    Aff2 sector_trans;
+    aff2_position(
+        sector_trans,
+        (Vec2){ -0.5f, 0.5f },
+        (Vec2){ 0.25f, 0.25f },
+        0.0f
+    );
+    aven_gl_shape_rounded_geometry_push_sector(
+        &ctx->shapes.geometry,
+        sector_trans,
+        AVEN_MATH_PI_F / 2.0f,
+        3.0f * AVEN_MATH_PI_F / 4.0f,
+        (Vec4){ 0.15f, 0.45f, 0.75f, 1.0f }
+    );
+    aven_gl_shape_rounded_geometry_push_sector(
+        &ctx->shapes.geometry,
+        sector_trans,
+        AVEN_MATH_PI_F / 4.0f,
+        AVEN_MATH_PI_F / 2.0f,
+        (Vec4){ 0.75f, 0.45f, 0.15f, 1.0f }
+    );
+
+    Aff2 square_half_trans;
+    aff2_position(
+        square_half_trans,
+        (Vec2){ 0.5f, -0.5f },
+        (Vec2){ 0.25f, 0.25f },
+        0.0f
+    );
+    aven_gl_shape_rounded_geometry_push_square_half(
+        &ctx->shapes.geometry,
+        square_half_trans,
+        1.0f,
+        (Vec4){ 0.75f, 0.75f, 0.0f, 1.0f }
+    );
+
     AvenGlTextLine hello_line = aven_gl_text_line(
         &ctx->text.font,
-        aven_str("Hello, World!"),
+        aven_str_uint_decimal(3, &arena),
         &arena
     );
     Aff2 hello_trans;
@@ -187,6 +224,20 @@ int game_update(
         pixel_size,
         (Vec4){ 1.0f, 1.0f, 1.0f, 1.0f }
     );
+
+    // Aff2 box_trans;
+    // aff2_position(
+    //     box_trans,
+    //     (Vec2){ 0.0f, 0.0f },
+    //     (Vec2){ pixel_size / 2.0f * hello_line.dim[0], pixel_size / 2.0f * hello_line.dim[1] },
+    //     0.0f
+    // );
+    // aven_gl_shape_rounded_geometry_push_square(
+    //     &ctx->shapes.geometry,
+    //     box_trans,
+    //     0.0f,
+    //     (Vec4){ 0.5f, 0.5f, 0.5f, 1.0f }
+    // );
 
     aven_gl_shape_rounded_buffer_update(
         gl,
